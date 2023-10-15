@@ -2,7 +2,8 @@ const webServer = require('./services/web-server.js');
 const database = require('./services/database.js');
 const dbConfig = require('./config/database.js');
 const axios = require('axios');
-const processocorretivo  = require('./model/processocorretivo.js');
+const processocorretivo   = require('./model/processocorretivo.js');
+const vianuvem            = require('./model/vianuvem.js');
 
 require("dotenv-safe").config();
 
@@ -98,9 +99,10 @@ process.on('uncaughtException', err => {
 function procedureTime() {
  
   processocorretivo.find()
+  vianuvem.find()
 }
 
-//setInterval(procedureTime,3600000)
+setInterval(procedureTime,3600000)
  
 
  

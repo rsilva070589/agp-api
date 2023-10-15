@@ -26,6 +26,7 @@ const checkpoint  = require('../controllers/checkpoint.js');
 const facil       = require('../controllers/comissaofacil.js');
 const integracao  = require('../controllers/integracao.js');
 const integracaoNew  = require('../controllers/integracaoNew.js');
+const vianuvem  = require('../controllers/vianuvem.js');
 
 require("dotenv-safe").config();
 const jwt = require('jsonwebtoken');
@@ -61,6 +62,8 @@ function verifyJWT(req, res, next){
   });
 }
 
+router.route('/vianuvem')
+.get(vianuvem.get);  
 
 router.route('/integracao/',)
 .post(verifyJWT,

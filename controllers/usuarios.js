@@ -81,8 +81,8 @@ module.exports.put = put;
  
 async function del(req, res, next) {
   try { 
-    const MES  = req.params.MES;
-    const NOME  = req.params.NOME;
+    const MES  = req.body.MES;
+    const NOME  = req.body.NOME;
     console.log('DELETANDO: '+NOME+' - '+MES)
 
     const success = await usuarios.delete(NOME,MES);
