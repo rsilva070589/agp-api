@@ -6,6 +6,7 @@ var regrasComissaoFinal = []
 
 var notaNPS = 100
 
+
  function mesAtual(){
         var data = new Date(),
             dia  = data.getDate().toString(),
@@ -50,8 +51,7 @@ async function getRegras(context) {
   const baseQuery = 
   `select *
     from COMISSOES_FAIXA x 
-    where 1=1
-    
+    where 1=1    
   `;
 
   let query = baseQuery;
@@ -66,11 +66,7 @@ async function getRegras(context) {
     binds.COD_FUNCAO = context.COD_FUNCAO; 
     query += `\nand x.COD_FUNCAO = :COD_FUNCAO`;
   }
-
- console.log(query)
   const result = await database.simpleExecute(query, binds); 
-  
-  console.log('REGRAS - numero de linhas retorno é: '+result.rows.length)
   return result.rows
 }
 
@@ -103,10 +99,7 @@ console.log('O MES ATUAL : '+mesAtual() +' e o MES CONTEXT : '+context.MES)
     binds.MES = context.MES; 
     query += `\nand x.MES_VENDA = :MES`;
   }
-  if (context.NOME) { 
-    binds.NOME = context.NOME; 
-    query += `\nand x.VENDEDOR = :NOME`;
-  }
+
 
  console.log(query)
   const result = await database.simpleExecute(query, binds); 
@@ -115,14 +108,11 @@ console.log('O MES ATUAL : '+mesAtual() +' e o MES CONTEXT : '+context.MES)
   return result.rows
 }
 
-async function getVendas(context) {
-
-  
+async function getVendas(context) {  
   const baseQuery = 
   `select *
     from vw_comissao x  
-    where 1=1 
-    
+    where 1=1     
   `;
 
   const baseQueryFechada = 
@@ -166,6 +156,15 @@ async function getVendas(context) {
     query += `\nand x.VENDEDOR = :NOME`;
   }
 
+  if (context.PERIODO_INI) { 
+    binds.PERIODO_INI = context.PERIODO_INI; 
+    query += `\nand x.DATA_VENDA >= :PERIODO_INI`;
+  }
+  if (context.PERIODO_FIM) { 
+    binds.PERIODO_FIM = context.PERIODO_FIM; 
+    query += `\nand x.DATA_VENDA <= :PERIODO_FIM`;
+  }
+
 
   const baseQueryGroup = 
   `select COD_EMPRESA_VENDEDORA,
@@ -201,6 +200,8 @@ async function getVendas(context) {
   }
   const bindsGroup = {};
 
+  
+
   if (context.MES) { 
     bindsGroup.MES = context.MES; 
     queryGroup += `\nand x.mes_venda = :MES`;
@@ -226,15 +227,22 @@ async function getVendas(context) {
     queryGroup += `\nand x.VENDEDOR = :NOME`;
   }
 
+  if (context.PERIODO_INI) { 
+    bindsGroup.PERIODO_INI = context.PERIODO_INI; 
+    queryGroup += `\nand x.DATA_VENDA >= :PERIODO_INI`;
+  }
+  if (context.PERIODO_FIM) { 
+    bindsGroup.PERIODO_FIM = context.PERIODO_FIM; 
+    queryGroup += `\nand x.DATA_VENDA <= :PERIODO_FIM`;
+  }
 
   queryGroup += ` \group by COD_EMPRESA_VENDEDORA,VENDEDOR,MES_VENDA,MARCA,TIPO`;
   
-  console.log(context)
+  console.log(context) 
   const resultGroup = await database.simpleExecute(queryGroup, bindsGroup);
   const result = await database.simpleExecute(query, binds);
   const arrayVendaLista = []
-  const arrayVendaGroup = []
-  console.log(query)
+  const arrayVendaGroup = [] 
   console.log('numero de linhas retorno é: '+result.rows.length)
   console.log(queryGroup)  
   console.log('numero de linhas Agrupadas é: '+resultGroup.rows.length)
@@ -278,7 +286,6 @@ async function getVendas(context) {
       arrayVendaLista.push(vendasLista)
     })
   }
-
    ajustandoLista()
 
   async function ajustandoListaGroup () {
@@ -320,10 +327,16 @@ async function find(context) {
   }
 
   const arrayVendas = await getVendas(context)
-  const meta    = await getMeta(context)
+   
+
  
   const arrayComissao = []
-  let usuario  = arrayUsuarios.filter(f=> f.NOME == context.CPF).map(x => x)[0]
+  let usuario  = arrayUsuarios.filter(f=> f.NOME == context.NOME).map(x => x)[0]
+
+  const metaGet   = await getMeta(context)
+  const meta =  metaGet.filter(f=> f.VENDEDOR==usuario?.NOME)
+  console.log(meta)
+
   if (!usuario?.NOME){
        usuario  = arrayUsuarios.filter(f=> f.NOME == context.NOME).map(x => x)[0]
       }
@@ -361,14 +374,12 @@ function somaValor(array) {
   var sum = 0; 
   for(var i =0;i<arr.length;i++){ 
     sum+=arr[i]; 
-  }  
-   
+  }     
   return arredonda(sum,2)
 }
 
 function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) { 
-  console.log('inicio Funcao comissaoFINAL')
-  console.log(meta)
+  console.log('inicio Funcao comissaoFINAL') 
   regrasComissaoFinal = []
  
   if (1) { 
@@ -376,14 +387,14 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
                               && f.MES == mes
                               && f.COD_EMPRESA == usuario.COD_EMPRESA
                               && f.COD_FUNCAO ==  usuario.COD_FUNCAO
-                              &&  meta[0]?.QTDE >= f.QTDE_MIN
-                              &&  meta[0]?.QTDE <= f.QTDE_MAX
+                              &&  meta[0]?.QTDE   >= f.QTDE_MIN
+                              &&  meta[0]?.QTDE   <= f.QTDE_MAX 
                               &&  f.MEDIA_ACESSORIOS_MIN == null
                               &&  f.VALOR_MIN == null
                               &&  f.QTDE_MIN > 0       
                                                    
               ).map(x => {
-                  console.log('Bloco-1: '+x.TIPO_COMISSAO)
+                  console.log('Bloco-1: '+x.TIPO_COMISSAO +' META: '+meta[0]?.QTDE)
                       regrasComissaoFinal.push(x)
                                     })
 
@@ -411,10 +422,7 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
                                       &&  f.MEDIA_ACESSORIOS_MIN == null
               ).map(x => { console.log('Bloco-3: '+x.TIPO_COMISSAO)
               regrasComissaoFinal.push(x)
-                    })
- 
-                                                
-
+                    }) 
                           arrayRegras.filter(f => f.USA_FAIXA != 'S' 
                               && f.MES == mes
                               && f.COD_EMPRESA == usuario.COD_EMPRESA
@@ -426,7 +434,7 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
                                     })      
       
                                     return regrasComissaoFinal 
-  }
+                                   }
     
 }
 

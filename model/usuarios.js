@@ -91,8 +91,8 @@ const createSqlComissaoAvulsa =
     ,MES
     ,DIRETORIA 
     ,FERIAS
-    ,FERIAS_INI
-    ,FERIAS_FIM
+    ,PERIODO_INI
+    ,PERIODO_FIM
   ) values ( 
     :COD_EMPRESA,
     :NOME_EMPRESA,
@@ -106,8 +106,8 @@ const createSqlComissaoAvulsa =
     :MES,
     :DIRETORIA, 
     :FERIAS,
-    :FERIAS_INI,
-    :FERIAS_FIM
+    :PERIODO_INI,
+    :PERIODO_FIM
   ) `
 
 
@@ -129,8 +129,8 @@ async function create(emp) {
                                                         item.MES,
                                                         item.DIRETORIA, 
                                                         item.FERIAS,
-                                                        tomorrow(item.FERIAS_INI),
-                                                        tomorrow(item.FERIAS_FIM)
+                                                        tomorrow(item.PERIODO_INI),
+                                                        tomorrow(item.PERIODO_FIM)
                                                        ]
                                                        , { autoCommit: true }); 
  
@@ -154,8 +154,8 @@ set
 ,MES         = :MES 
 ,DIRETORIA   = :DIRETORIA
 ,FERIAS      = :FERIAS
-,FERIAS_INI  = :FERIAS_INI
-,FERIAS_FIM  = :FERIAS_FIM
+,PERIODO_INI  = :PERIODO_INI
+,PERIODO_FIM  = :PERIODO_FIM
 
 where NOME = :NOME
 AND   MES  = :MES
@@ -177,8 +177,8 @@ const result = await database.simpleExecute(updateSql,
                                               item.MES,
                                               item.DIRETORIA,
                                               item.FERIAS,
-                                              tomorrow(item.FERIAS_INI),
-                                              tomorrow(item.FERIAS_FIM),
+                                              tomorrow(item.PERIODO_INI),
+                                              tomorrow(item.PERIODO_FIM),
                                               item.NOME,
                                             ],
                                          { autoCommit: true });
@@ -205,5 +205,4 @@ return result;
 }
 
 module.exports.delete = del;
-
 

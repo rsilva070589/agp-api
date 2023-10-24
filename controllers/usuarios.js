@@ -41,8 +41,8 @@ function getItemFromRec(req) {
     MES: req.body.MES,
     DIRETORIA: req.body.DIRETORIA, 
     FERIAS: req.body.FERIAS,
-    FERIAS_INI: req.body.FERIAS_INI,
-    FERIAS_FIM: req.body.FERIAS_FIM
+    PERIODO_INI: req.body.PERIODO_INI,
+    PERIODO_FIM: req.body.PERIODO_FIM
   };
   return item;
 }
