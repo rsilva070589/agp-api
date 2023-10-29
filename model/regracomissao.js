@@ -3,20 +3,20 @@ const database = require('../services/database.js');
 
 const baseQuery = 
 `select *
-from COMISSOES_FAIXA x   
-order by tipo_comissao DESC  
+from COMISSOES_FAIXA x  
+where 1=1
 `;
 
 async function find(context) {
   let query = baseQuery;
   const binds = {};
-
+  console.log(context)
   if (context.id) { 
-    binds.tipo_id = context.id;
-    console.log(context.id)
-    query += `\where x.cod_funcao = :tipo_id`;
+    binds.tipo_id = context.id;    
+    query += `\nand x.mes = :tipo_id  `;
   }
-
+  query += `order by tipo_comissao DESC `
+  console.log(query)
   const result = await database.simpleExecute(query, binds);  
   return result.rows
 }

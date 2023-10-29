@@ -3,11 +3,11 @@ const regras = require('../model/regracomissao');
 
 async function get(req, res, next) {
   try {
-    const context = {};
-
-    context.id = parseInt(req.params.id, 10);
+    const context = {}; 
+    context.id = req.params.id?.replace('-','/');
 
     const rows = await regras.find(context);
+    
 
     if (req.params.id) {
       if (rows.length > 0) {

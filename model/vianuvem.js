@@ -5,7 +5,8 @@ const axios     = require('axios');
 var apolise = []
 let tokenvianuvem = false;
 let datatoken = false; 
-var hoje = new Date();
+ 
+const arrayIntegrados = []
 
 async function getDados(){
   let data = JSON.stringify({
@@ -28,7 +29,7 @@ async function getDados(){
     await axios.request(config)
     .then((response) => { 
       tokenvianuvem = response.data.token   
-      datatoken = hoje.getHours()
+      datatoken = new Date().getHours()
       console.log('Buscando Token')   
     })
     .catch((error) => {
@@ -36,36 +37,37 @@ async function getDados(){
     });
   }
 
-  if ((datatoken+6) < hoje.getHours()){
+  if (datatoken != new Date().getHours()){
     await axios.request(config)
     .then((response) => { 
       tokenvianuvem = response.data.token   
-      datatoken = hoje.getHours()
+      datatoken = new Date().getHours()
       console.log('Revalidando Token')   
     })
     .catch((error) => {
       console.log(error);
     });
-  }
+  } 
 
  
-  if(tokenvianuvem && (datatoken+6) > hoje.getHours()){ 
-    console.log('proxima busca token ocorre em:' +((datatoken + 6) - hoje.getHours()) +' Horas')
-    
-  //  getVianuvem("Veiculo entregue")
-    return   getVianuvem("Seguro registrado") 
+  if(tokenvianuvem && (datatoken == new Date().getHours())) { 
+    arrayIntegrados.pop()
+    console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
+    await getVianuvem("Seguro registrado",null)
+    await getVianuvem("OPERACÕES MONTADORA",'50039722')    
+    await getListaBusca()
+    return arrayIntegrados
   }
- 
   
 }
  
 
-async function getVianuvem(tipobusca){ 
+async function getVianuvem(tipobusca,processTypeIds){ 
 
 let data = JSON.stringify({
   "documentId": '',
   "establishmentIds": [],
-  "processTypeIds": [],
+  "processTypeIds": [processTypeIds],
   "documentTypeIds": [],
   "initialDate": "01/10/2023 00:37:28",
   "finalDate": "",
@@ -82,9 +84,7 @@ let config = {
     'Authorization': 'Bearer '+ tokenvianuvem
   },
   data : data
-};
-console.log('funcao get via nuvem')
-
+}; 
  
 await  axios.request(config)
   .then((response) =>{ 
@@ -92,24 +92,39 @@ await  axios.request(config)
       response.data.processes.map( x=> {
         const dado = {
             PROCESSO:   x.processId,
-            DATA:       x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue,
+            TIPO:       x.indexerVO.filter(f => f.indexerLabel=='Tipo NPS')[0]?.indexerValue,
+            DATA:       x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue || x.createDate,
             PROPOSTA:   x.indexerVO.filter(f => f.indexerLabel=='NÚMERO DA PROPOSTA')[0]?.indexerValue,
-            CLIENTE:    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue,
+            CLIENTE:    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
             EMPRESA:    x.processEstablishmentBreadCrumb[0],
             CPF:        x.indexerVO.filter(f => f.indexerLabel=='CPF')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
             CHASSI:     x.indexerVO.filter(f => f.indexerLabel=='CHASSI')[0]?.indexerValue,
             SEGURADORA: x.indexerVO.filter(f => f.indexerLabel=='SEGURADORAS')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='SEGURADORA')[0]?.indexerValue,
-            VENDEDOR:   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO SEGURO')[0]?.indexerValue,
+            VENDEDOR:   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO SEGURO')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='Consultor de Venda')[0]?.indexerValue?.split('-')[0],
             CILINDRADA:  x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
-            CPF_SEGURADO:  x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
+            CPF_SEGURADO:  x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
+            VALOR:      x.indexerVO.filter(f => f.indexerLabel=='Valor da Nota')[0]?.indexerValue.replace(',','.') ||0 ,
         } 
     
-    if (dado.SEGURADORA == undefined && dado.DATA == undefined){
-      console.log('Processo: '+dado.PROCESSO+' - '+dado.CLIENTE+' nao tem seguro')
+    if ( x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue == undefined &&  x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue == undefined){
+     //  console.log('Processo: '+dado.PROCESSO+' - '+dado.CLIENTE+' nao tem Registro valido')
     } else{
+      arrayIntegrados.push(dado)
       apolise.push(dado) 
-      gravaSeguro(tomorrow(dado.DATA),dado.PROPOSTA,dado.CHASSI,dado.VENDEDOR,dado.CPF_SEGURADO||'-'||dado.PROCESSO,dado.SEGURADORA,dado.CILINDRADA,dado.CPF,dado.PROCESSO)
+       gravaSeguro(tomorrow(dado.DATA),
+                  dado.PROPOSTA,
+                  dado.CHASSI,
+                  dado.VENDEDOR,
+                  dado.CLIENTE+' - '+dado.CPF_SEGURADO+' Processo: '+dado.PROCESSO,
+                  dado.SEGURADORA,
+                  dado.CILINDRADA,
+                  dado.CPF,
+                  dado.PROCESSO,
+                  dado.TIPO,
+                  dado.VALOR                  
+                  )      
     } 
+    
     
     } ) 
     })
@@ -124,6 +139,19 @@ async function find(){
   return getDados()  
 }
 
+async function getListaBusca(){
+  const baseQuery = 
+  ` select cod_proposta from agpdev.buscaVianuvem
+  `;   
+  const result = await database.simpleExecute(baseQuery); 
+  console.log('qtde de propostas para Busca' +result.rows?.length)
+  result.rows.map(async x => {
+     await  getVianuvem(x.COD_PROPOSTA,null)
+  })
+  
+  return result.rows
+}
+
 
 const baseQuery = 
 `
@@ -135,13 +163,15 @@ OBS,
 CHASSI_COMPLETO, 
 VENDEDOR,
 SEQUENCIA,
+VALOR_SERVICO,
 COD_PLANO,
 COD_ORIGEM,
-VALOR_SERVICO, 
+ 
 COD_TIPO,
-COD_SERVICO_FI, 
-COD_CLIENTE, 
+COD_SERVICO_FI,  
 cod_cliente_destino,
+
+COD_CLIENTE,
 SEQUENCIA_AGENTE
 )
 VALUES (
@@ -152,13 +182,14 @@ VALUES (
 :CHASSI,
 :VENDEDOR,
 :seguencia,
+:valor_servico,
 :COD_PLANO,
 :COD_ORIGEM,
-0, 
+
 :COD_TIPO,
-308, 
-17291690000188,
+:cod_servico_fi, 
 :cod_cliente_destino,
+17291690000188,
 655)
 `;  
 
@@ -172,8 +203,7 @@ and  cod_proposta=:cod_proposta
 const baseQueryProcesso = 
 `
 select cod_origem from nbs.fi_servicos_proposta
-where cod_servico_fi=308
-and  cod_origem=:cod_origem
+where   cod_origem=:cod_origem
 `;  
  
 const baseQueryEmpresa = 
@@ -211,12 +241,30 @@ function getTipoSeguradora (seguradora){
   if(seguradora == 'ALLIANZ'){ tipo = 125}  
   if(seguradora == 'PORTO SEGURO'){ tipo = 126}
   if(seguradora == 'TOKIO MARINE'){ tipo = 127}
-  return tipo
+  return tipo 
 }
 
-async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo) {
-               console.log(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo) 
-  if (await getPropostaExistente(proposta) == 0 && await getProcessoExistente(processo) == 0){  
+function getCodServicoFi (tipo){ 
+  let tipoFinal = 0
+  if(tipo == 'MAPFRE'){ tipoFinal  = 308}
+  if(tipo == 'NPS VENDAS' ){ tipoFinal  = 402} 
+  console.log('tipoFinal: '+tipoFinal)
+  return tipoFinal ||308
+}
+
+
+
+async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente) {
+               console.log(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente)
+
+               if (proposta?.length < 8){
+               console.log(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo) 
+                proposta = null                
+               }
+  
+
+  if (await getPropostaExistente(proposta) == 0 && await getProcessoExistente(processo) == 0){ 
+    
     const sqlsequencia = `SELECT nbs.seq_fi_sequencia.NEXTVAL SEQ_FI FROM DUAL`
     const resultseq   = await database.simpleExecute(sqlsequencia)  
     const sequencia = resultseq.rows[0]['SEQ_FI']
@@ -226,7 +274,19 @@ async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindra
     
     console.log(sequencia)  
     console.log('Gravando Proposta/processo: ' + proposta||processo)
-    const result = await database.simpleExecute(baseQuery,[data,proposta,empresaVendedor,obs,chassi,vendedor,sequencia,cilindrada,processo,getTipoSeguradora(seguradora),cpf]); 
+    const result = await database.simpleExecute(baseQuery,[data
+                                                            ,proposta
+                                                            ,empresaVendedor
+                                                            ,obs
+                                                            ,chassi
+                                                            ,vendedor
+                                                            ,sequencia
+                                                            ,valor
+                                                            ,cilindrada                                                            
+                                                            ,processo                                                            
+                                                            ,getTipoSeguradora(seguradora) || getCodServicoFi(tipo)
+                                                            ,getCodServicoFi(tipo)
+                                                            ,cpf]); 
     return null
   }   
 } 
