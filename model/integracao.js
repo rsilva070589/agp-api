@@ -442,10 +442,11 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
 }
 
 function valorComissao(empresa, tipo, vlr_venda,arrayVendas,colaborador,qtde_nps) {
-  console.log(empresa+' - '+tipo+' - '+vlr_venda+' - '+colaborador+' - '+qtde_nps)
-  console.log(qtde_nps) 
+  console.log(empresa+' - '+tipo+' - '+vlr_venda+' - '+colaborador.NOME+' - '+qtde_nps)
+ 
+  
   var vlrComissao = 0     
-    regrasComissaoFinal.filter(f => f.COD_EMPRESA == empresa && f.TIPO_COMISSAO == tipo ).map(x => {   
+    regrasComissaoFinal.filter(f => f.COD_EMPRESA == colaborador.COD_EMPRESA && f.TIPO_COMISSAO == tipo ).map(x => {   
       
     if (x.PERC > 0) { 
         
@@ -463,7 +464,7 @@ function valorComissao(empresa, tipo, vlr_venda,arrayVendas,colaborador,qtde_nps
       vlrComissao = x.VALOR * arrayVendas?.filter(f => f.TIPO == tipo && f.VENDEDOR == colaborador.NOME)[0].ANALITICO.length
       //   
     }  
-    if ( x.PREMIO == 'NPS' &&  parseInt(colaborador.NOTA_NPS || 0) >= qtde_nps) {    
+    if ( x.PREMIO == 'NPS' &&  parseInt(colaborador.NOTA_NPS ) >= qtde_nps) {    
       vlrComissao = x.VALOR      
     }  
     })                 
@@ -488,7 +489,7 @@ function comissaoPerc(empresa, tipo, meta){
           }             
           if (x.PREMIO == 'NPS' ) {              
             //&& x.QTDE <= 90                                                     
-              perc_valor = 999
+              perc_valor = x.VALOR
           }             
           if (x.PREMIO == 'DSR') {                                                      
               perc_valor = x.PERC
@@ -510,6 +511,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                                                           const dados = {
                                                           "TIPO":         x.TIPO,
                                                           "COD_EMPRESA":  x.COD_EMPRESA_VENDEDORA,
+                                                          "MARCA":        x.MARCA,
                                                           "MES_VENDA":    x.MES_VENDA,
                                                           "NOME_CLIENTE": x.NOME_CLIENTE,
                                                           "CHASSI":       x.CHASSI,
@@ -563,6 +565,8 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
   const arrayVendasLista = []
   const arrayfiltroGestorFaixa = []    
   const arrayAjusteObjeto = []
+
+  console.log(arrayVendas.filter(f => f.TIPO == 'VENDA-VEICULOS-NOVOS-MARGEM'))
                                          
                                           if(usuario?.GESTOR > 1){ 
                                           arrayVendas.filter(f => f.COD_EMPRESA_VENDEDORA == usuario.COD_EMPRESA
@@ -666,7 +670,9 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                     "CLASSE": r.CLASSE,
                                                     "APELIDO": r.APELIDO,
                                                     "LEGENDA": r.LEGENDA,
+                                                    "MARCA": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.map(x => x.MARCA)?.[0],
                                                     "DESPESAS": somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.map(x => x.DESPESAS)|| 0),
+                                                    "GANHOS":   somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.map(x => x.GANHOS)|| 0),
                                                     "BLOCO": "4",
                                                     "PERC": r.PERC,
                                                     "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]

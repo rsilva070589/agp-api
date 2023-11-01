@@ -54,9 +54,11 @@ async function getDados(){
     arrayIntegrados.pop()
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
     await getVianuvem("Seguro registrado",null)
-    await getVianuvem("OPERACÕES MONTADORA",'50039722')    
+    await getVianuvem("",50039722)    
     await getListaBusca()
-    return arrayIntegrados
+    await getListaNPS()
+   //getVianuvem("Processo land care",null)
+    return  arrayIntegrados
   }
   
 }
@@ -90,24 +92,47 @@ await  axios.request(config)
   .then((response) =>{ 
   apolise = []
       response.data.processes.map( x=> {
-        const dado = {
-            PROCESSO:   x.processId,
-            TIPO:       x.indexerVO.filter(f => f.indexerLabel=='Tipo NPS')[0]?.indexerValue,
-            DATA:       x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue || x.createDate,
-            PROPOSTA:   x.indexerVO.filter(f => f.indexerLabel=='NÚMERO DA PROPOSTA')[0]?.indexerValue,
-            CLIENTE:    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
-            EMPRESA:    x.processEstablishmentBreadCrumb[0],
-            CPF:        x.indexerVO.filter(f => f.indexerLabel=='CPF')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
-            CHASSI:     x.indexerVO.filter(f => f.indexerLabel=='CHASSI')[0]?.indexerValue,
-            SEGURADORA: x.indexerVO.filter(f => f.indexerLabel=='SEGURADORAS')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='SEGURADORA')[0]?.indexerValue,
-            VENDEDOR:   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO SEGURO')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='Consultor de Venda')[0]?.indexerValue?.split('-')[0],
-            CILINDRADA:  x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
-            CPF_SEGURADO:  x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
-            VALOR:      x.indexerVO.filter(f => f.indexerLabel=='Valor da Nota')[0]?.indexerValue.replace(',','.') ||0 ,
-        } 
-    
-    if ( x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue == undefined &&  x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue == undefined){
+        const dado = {}
+        if (1){
+           dado.PROCESSO=   x.processId,
+           dado.TIPO=       x.indexerVO.filter(f => f.indexerLabel=='Tipo NPS')[0]?.indexerValue ,
+           dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue || '01/'+x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue.split('/')[1]+'/'+ x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue.split('/')[0] || x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue,
+           dado.PROPOSTA=   x.indexerVO.filter(f => f.indexerLabel=='NÚMERO DA PROPOSTA')[0]?.indexerValue,
+           dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
+           dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],
+           dado.CPF=        x.indexerVO.filter(f => f.indexerLabel=='CPF')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
+           dado.CHASSI=     x.indexerVO.filter(f => f.indexerLabel=='CHASSI')[0]?.indexerValue,
+           dado.SEGURADORA= x.indexerVO.filter(f => f.indexerLabel=='SEGURADORAS')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='SEGURADORA')[0]?.indexerValue,
+           dado.VENDEDOR=   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO SEGURO')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='Consultor de Venda')[0]?.indexerValue?.split('-')[0] ||x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO PLANO')[0]?.indexerValue?.split('-')[0],
+           dado.CILINDRADA= x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
+           dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
+           dado.VALOR=      x.indexerVO.filter(f => f.indexerLabel=='Valor da Nota')[0]?.indexerValue.replace(',','.') ||0 
+        }
+        if(tipobusca == 'Processo land care'){
+          dado.PROCESSO=   x.processId,
+           dado.TIPO=       'PROCESSO-LAND-CARE',
+           dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
+           dado.PROPOSTA=   null,
+           dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
+           dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],
+           dado.CPF=        x.indexerVO.filter(f => f.indexerLabel=='CPF')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
+           dado.CHASSI=     x.indexerVO.filter(f => f.indexerLabel=='CHASSI')[0]?.indexerValue,
+           dado.SEGURADORA= x.indexerVO.filter(f => f.indexerLabel=='SEGURADORAS')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='SEGURADORA')[0]?.indexerValue,
+           dado.VENDEDOR=   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO PLANO')[0]?.indexerValue?.split('-')[0],
+           dado.CILINDRADA= x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
+           dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
+           dado.VALOR=      x.indexerVO.filter(f => f.indexerLabel=='VALOR')[0]?.indexerValue.replace(',','.') ||0 
+        
+      }
+ 
+        
+    if ( x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue == undefined
+     &&  x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue == undefined
+     && x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue == undefined
+     ){
      //  console.log('Processo: '+dado.PROCESSO+' - '+dado.CLIENTE+' nao tem Registro valido')
+ 
+     
     } else{
       arrayIntegrados.push(dado)
       apolise.push(dado) 
@@ -147,6 +172,33 @@ async function getListaBusca(){
   console.log('qtde de propostas para Busca' +result.rows?.length)
   result.rows.map(async x => {
      await  getVianuvem(x.COD_PROPOSTA,null)
+  })
+  
+  return result.rows
+}
+
+async function getListaNPS(){
+  const baseQueryCheckpoint = 
+`
+select 
+(u.nome||'-'||u.nome_completo) usuario
+  from agpdev.usuarios u
+ where (u.cod_empresa, u.cod_funcao) in
+       (select cod_empresa, cod_funcao
+          from agpdev.comissoes_faixa
+         where PREMIO = 'NPS'
+         group by (cod_empresa, cod_funcao))
+   and mes >= '10/2023'
+   and nvl(u.diretoria,'N') <> 'S'
+   and (nome, mes) not in
+       (select fi.vendedor, to_char(fi.data_venda, 'mm/yyyy')
+          from nbs.fi_servicos_proposta fi
+         where fi.cod_servico_fi = 402)
+` 
+  const result = await database.simpleExecute(baseQueryCheckpoint); 
+  console.log('qtde de NPS para busca' +result.rows?.length)
+  result.rows.map(async x => {
+     await  getVianuvem(x.USUARIO,null)
   })
   
   return result.rows
@@ -231,7 +283,7 @@ async function getProcessoExistente(processo) {
 async function getEmpresaVendedor(vendedor) { 
   console.log('Buscando Empresa Vendedor: ' + vendedor)
   const result = await database.simpleExecute(baseQueryEmpresa,[vendedor]); 
-  return result.rows[0]?.COD_EMPRESA || 0
+  return result.rows[0]?.COD_EMPRESA  
 }
 
 function getTipoSeguradora (seguradora){
@@ -248,6 +300,7 @@ function getCodServicoFi (tipo){
   let tipoFinal = 0
   if(tipo == 'MAPFRE'){ tipoFinal  = 308}
   if(tipo == 'NPS VENDAS' ){ tipoFinal  = 402} 
+  if(tipo == 'PROCESSO-LAND-CARE' ){ tipoFinal  = 404} 
   console.log('tipoFinal: '+tipoFinal)
   return tipoFinal ||308
 }
@@ -276,7 +329,7 @@ async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindra
     console.log('Gravando Proposta/processo: ' + proposta||processo)
     const result = await database.simpleExecute(baseQuery,[data
                                                             ,proposta
-                                                            ,empresaVendedor
+                                                            ,empresaVendedor 
                                                             ,obs
                                                             ,chassi
                                                             ,vendedor
@@ -290,7 +343,8 @@ async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindra
     return null
   }   
 } 
-
+ 
+ 
  
 
 const tomorrow = (dt) => {
