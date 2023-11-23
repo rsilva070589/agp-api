@@ -206,7 +206,7 @@ async function getVendas(context) {
 
   if (context.MES) { 
     bindsGroup.MES = context.MES; 
-    queryGroup += `\nand x.mes_venda = :MES`;
+    queryGroup += `\nand x.mes_venda =  :MES`;
   }
 
   if (context.COD_EMPRESA) { 
@@ -241,12 +241,13 @@ async function getVendas(context) {
   queryGroup += ` \group by COD_EMPRESA_VENDEDORA,VENDEDOR,MES_VENDA,MARCA,TIPO`;
   
   //console.log(context) 
+   //console.log(queryGroup) 
   const resultGroup = await database.simpleExecute(queryGroup, bindsGroup);
   const result = await database.simpleExecute(query, binds);
   const arrayVendaLista = []
   const arrayVendaGroup = [] 
   //console.log('numero de linhas retorno é: '+result.rows.length)
-  //console.log(queryGroup)  
+  
   //console.log('numero de linhas Agrupadas é: '+resultGroup.rows.length)
   
   function dataAtualFormatada(dataFormat){
@@ -339,7 +340,7 @@ async function find(context) {
 
   const metaGet   = await getMeta(context)
   const meta =  metaGet.filter(f=> f.VENDEDOR==usuario?.NOME)
-  console.log(meta)
+ // console.log(meta)
 
   if (!usuario?.NOME){
        usuario  = arrayUsuarios.filter(f=> f.NOME == context.NOME).map(x => x)[0]
@@ -385,7 +386,7 @@ function somaValor(array) {
 function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) { 
  // console.log('inicio Funcao comissaoFINAL') 
   regrasComissaoFinal = []
- 
+ //console.log(arrayRegras)
   if (1) { 
     arrayRegras.filter(   f =>   f.USA_FAIXA == 'S' 
                               && f.MES == mes
@@ -442,7 +443,7 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
 }
 
 function valorComissao(empresa, tipo, vlr_venda,arrayVendas,colaborador,qtde_nps) {
-  console.log(empresa+' - '+tipo+' - '+vlr_venda+' - '+colaborador.NOME+' - '+qtde_nps)
+//  console.log(empresa+' - '+tipo+' - '+vlr_venda+' - '+colaborador.NOME+' - '+qtde_nps)
  
   
   var vlrComissao = 0     
@@ -478,7 +479,7 @@ function comissaoPerc(empresa, tipo, meta){
       
     
           if (x.PERC > 0) {
-              perc_valor = x.VALOR 
+              perc_valor = x.PERC 
           } 
           if (x.VALOR == 0 && x.QTDE <= meta.QTDE) {
               perc_valor = x.VALOR
@@ -530,7 +531,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                                                           "GANHOS":       somaValor(x.ANALITICO.map(x => x.GANHOS)) ,
                                                           "ANALITICO":    x.ANALITICO,
                                                           "BLOCO": "NORMAL",
-                                                          "PERC": arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.PERC,
+                                                          "PERC": comissaoPerc(x.COD_EMPRESA_VENDEDORA, x.TIPO,meta) || 0,
                                                           
 
                                                       } 
@@ -549,7 +550,8 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                               "APELIDO":      arrayRegras.filter(f => f.TIPO_COMISSAO == bonus.TIPO_COMISSAO)[0]?.APELIDO,                              
                               "QTDE": 1,
                               "BLOCO": 'PREMIO',
-                              "CLASSE":       'PREMIACOES'
+                              "CLASSE":       'PREMIACOES',
+                              "PERC":  0,
                           } 
   arrayFiltro.push(dados)     
   })
@@ -565,8 +567,9 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
   const arrayVendasLista = []
   const arrayfiltroGestorFaixa = []    
   const arrayAjusteObjeto = []
+const notaNPS = false
+ 
 
-  console.log(arrayVendas.filter(f => f.TIPO == 'VENDA-VEICULOS-NOVOS-MARGEM'))
                                          
                                           if(usuario?.GESTOR > 1){ 
                                           arrayVendas.filter(f => f.COD_EMPRESA_VENDEDORA == usuario.COD_EMPRESA
@@ -608,7 +611,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                    
                                               if(r.PREMIO=='S' && r.PERMITE_AVULSO!='S'){
                                                   const valorTotalDpto  = { 
-                                                  "TOTAL_VENDA":    0,
+                                                  "TOTAL_VENDA":    somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA)),
                                                   "QTDE":           arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.length,
                                                   "VENDEDOR":       usuario.NOME, 
                                                   "TIPO":           r.TIPO_COMISSAO,
@@ -624,7 +627,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                   
                                                   if(r.PREMIO=='S' && r.PERMITE_AVULSO=='S' && r.PERC == 0){                                                  
                                                   const valorTotalDpto  = { 
-                                                  "TOTAL_VENDA":    0,
+                                                  "TOTAL_VENDA":    somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA)),
                                                   "QTDE":           arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.length,
                                                   "VENDEDOR":       usuario.NOME,
                                                   "TIPO":           r.TIPO_COMISSAO,
@@ -643,7 +646,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                   if(r.PREMIO=='S' && r.PERMITE_AVULSO=='S' && r.PERC > 0){
                                                     //  console.log(r)
                                                   const valorTotalDpto  = { 
-                                                  "TOTAL_VENDA":    0,
+                                                  "TOTAL_VENDA":    somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA)),
                                                   "QTDE":           arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.length,
                                                   "VENDEDOR":       usuario.NOME,
                                                   "TIPO":           r.TIPO_COMISSAO,
@@ -660,12 +663,20 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                       arrayGestor.push(valorTotalDpto)  
                                                   }                                        
                                                   if(r.PREMIO=='N'){
+                                                    let percentual = 0
+                                                    if (r.PERC_NPS != null && usuario.NOTA_NPS >= 90){
+                                                      percentual=r.PERC_NPS
+                                                    }else{
+                                                      percentual=r.PERC
+                                                    }
+                                                    
+
                                                   const valorTotalDpto  = { 
                                                     "TOTAL_VENDA":    somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA)),
                                                     "QTDE":           arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.length,
                                                     "VENDEDOR":       usuario.NOME,
                                                     "TIPO":           r.TIPO_COMISSAO,
-                                                    "COMISSAO":       somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA * r.PERC )),
+                                                    "COMISSAO":       somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA * percentual )),
                                                     "USA_FAIXA": 'N',
                                                     "CLASSE": r.CLASSE,
                                                     "APELIDO": r.APELIDO,
@@ -674,11 +685,12 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                     "DESPESAS": somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.map(x => x.DESPESAS)|| 0),
                                                     "GANHOS":   somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.map(x => x.GANHOS)|| 0),
                                                     "BLOCO": "4",
-                                                    "PERC": r.PERC,
+                                                    "PERC": percentual,
                                                     "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
                                                                           } 
                                                       arrayGestor.push(valorTotalDpto)  
                                                   }
+                                                 
                                                   if(r.PREMIO=='DSR'){
                                                   const valorTotalDpto  = { 
                                                   "TOTAL_VENDA":    0,
@@ -709,7 +721,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                   && f.MES_VENDA == mes
                                                   && f.TIPO == r.TIPO_COMISSAO
                                           ).map(item => {  
-                                          //  console.log(item.TIPO)  
+                                             
                                                               arrayRegras.filter(f =>  f.MES   == mes
                                                                                   && f.COD_EMPRESA == usuario.COD_EMPRESA
                                                                                   && f.COD_FUNCAO  == usuario.COD_FUNCAO
@@ -718,12 +730,12 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                                                   && f.PERC_MAX > item?.MARGEM_VENDA
                                                                                   &&  f.MEDIA_ACESSORIOS_MIN == null
                                                                                   &&  f.TIPO_COMISSAO == item.TIPO
-                                                                              ).map(rf => { 
-                                                                                  
+                                                                              ).map(rf => {  
+                                                                           
                                                                                  var dadosVendas  = {
                                                                                   "CHASSI": item.CHASSI,                                                                                         
                                                                                   "CPF": item.COD_CLIENTE,
-                                                                                  "DATA": item.DATA_VENDA,
+                                                                                  "DATA_VENDA": item.DATA_VENDA,
                                                                                   "COD_EMPRESA": item.EMPRESA,
                                                                                   "MES_VENDA": item.MES_VENDA,
                                                                                   "NOME_CLIENTE": item.NOME_CLIENTE,
@@ -743,8 +755,25 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                                                    // console.log(dadosVendas)
                                                                                    arrayfiltroGestorFaixa.push(dadosVendas) 
                                                                                   }
-                                                                              })
-                                                          })                         
+                                                                              })                                              
+
+                                                          })    
+                                                          
+
+                                        if(r.PREMIO=='S' && arrayGestor.filter(f => f.TIPO==r.TIPO_COMISSAO).length == 0){
+                                          const valorTotalDpto  = { 
+                                          "TOTAL_VENDA":    somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).map(x => x.TOTAL_VENDA)),
+                                          "QTDE":           arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).length,
+                                          "VENDEDOR":       usuario.NOME,
+                                          "TIPO":           r.TIPO_COMISSAO,
+                                          "COMISSAO":       somaValor(arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).map(x => x.COMISSAO)),
+                                          "USA_FAIXA": 'S',
+                                          "APELIDO": r.APELIDO,
+                                          "BLOCO": "7",
+                                          "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
+                                                          }              
+                                              arrayGestor.push(valorTotalDpto)  
+                                          }   
 
                                           if(r.PREMIO=='S' && arrayGestor.filter(f => f.TIPO==r.TIPO_COMISSAO).length == 0){
                                           const valorTotalDpto  = { 
@@ -755,12 +784,61 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                           "COMISSAO":       somaValor(arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).map(x => x.COMISSAO)),
                                           "USA_FAIXA": 'S',
                                           "APELIDO": r.APELIDO,
-                                          "BLOCO": "6",
+                                          "BLOCO": "8",
                                           "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
                                                           }              
                                               arrayGestor.push(valorTotalDpto)  
                                           }   
+                                          
+                                          if(   r.PREMIO=='S' 
+                                            &&  meta.filter(fm => fm.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA) >= r.VALOR_MIN
+                                            &&  meta.filter(fm => fm.TIPO == r.TIPO_COMISSAO).map(x => x.TOTAL_VENDA) <  r.VALOR_MAX
+                                            &&  r.VALOR_MIN > 0 
+                                         //   &&  r.MEDIA_ACESSORIOS_MIN == null
+                                            )
+                                            {
+                                              console.log(r)
+                                            const valorTotalDpto  = { 
+                                            "TOTAL_VENDA":    somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).map(x => x.TOTAL_VENDA)),
+                                            "QTDE":           arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).length,
+                                            "VENDEDOR":       usuario.NOME,
+                                            "TIPO":           r.TIPO_COMISSAO,
+                                            "COMISSAO":       r.VALOR,
+                                            "USA_FAIXA": 'S',
+                                            "APELIDO": r.APELIDO,
+                                            "BLOCO": "7",
+                                            "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
+                                                            }              
+                                                arrayGestor.push(valorTotalDpto)  
+                                            }  
+
                                           })
+
+                                          
+                                          arrayRegras.filter(f =>  f.MES   == mes
+                                            && f.COD_EMPRESA == usuario.COD_EMPRESA
+                                            && f.COD_FUNCAO  == usuario.COD_FUNCAO
+                                            && f.USA_FAIXA   == 'S' 
+                                            &&  f.MEDIA_ACESSORIOS_MIN == null
+                                           // &&  f.TIPO_COMISSAO == 'VENDA-VEICULOS-NOVOS-MARGEM'
+                                        ).map( r=> {
+                                          const valorTotalDpto  = { 
+                                            "TOTAL_VENDA":    somaValor(arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes && f.PERCENTUAL == r.PERC).map(x => x.TOTAL_VENDA)),
+                                            "QTDE":           arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes).length,
+                                            "VENDEDOR":       usuario.NOME,
+                                            "TIPO":           r.TIPO_COMISSAO,
+                                            "COMISSAO":       somaValor(arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes  && f.PERCENTUAL == r.PERC).map(x => x.COMISSAO)),
+                                            "USA_FAIXA": 'S',
+                                            "APELIDO": r.APELIDO,
+                                            "BLOCO": "9",
+                                            "PERC": r.PERC,
+                                            "ANALITICO": arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.PERCENTUAL == r.PERC)
+                                                            }              
+                                                arrayGestor.push(valorTotalDpto) 
+                                        })
+
+
+                                          
  
                                            
   return arrayGestor.filter(f => f.COMISSAO > 0)

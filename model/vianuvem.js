@@ -54,10 +54,9 @@ async function getDados(){
     arrayIntegrados.pop()
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
     await getVianuvem("Seguro registrado",null)
-    await getVianuvem("",50039722)    
     await getListaBusca()
     await getListaNPS()
-   //getVianuvem("Processo land care",null)
+    await getVianuvem("",50039722) //Operacões montadora
     return  arrayIntegrados
   }
   
@@ -65,13 +64,17 @@ async function getDados(){
  
 
 async function getVianuvem(tipobusca,processTypeIds){ 
+  var time = new Date();
+  var dataBusca = new Date();
+  dataBusca.setDate(time.getDate() - 7); // Adiciona 3 dias
+ 
 
 let data = JSON.stringify({
   "documentId": '',
   "establishmentIds": [],
   "processTypeIds": [processTypeIds],
   "documentTypeIds": [],
-  "initialDate": "01/10/2023 00:37:28",
+  "initialDate": FormataData(dataBusca) + " 00:37:28",
   "finalDate": "",
   "searchFor": tipobusca,
   "like": false
@@ -90,10 +93,11 @@ let config = {
  
 await  axios.request(config)
   .then((response) =>{ 
-  apolise = []
+  apolise = [] 
       response.data.processes.map( x=> {
+       
         const dado = {}
-        if (1){
+        if (processTypeIds != '50039722'){
            dado.PROCESSO=   x.processId,
            dado.TIPO=       x.indexerVO.filter(f => f.indexerLabel=='Tipo NPS')[0]?.indexerValue ,
            dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue || '01/'+x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue.split('/')[1]+'/'+ x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue.split('/')[0] || x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue,
@@ -108,9 +112,9 @@ await  axios.request(config)
            dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
            dado.VALOR=      x.indexerVO.filter(f => f.indexerLabel=='Valor da Nota')[0]?.indexerValue.replace(',','.') ||0 
         }
-        if(tipobusca == 'Processo land care'){
+        if(processTypeIds == '50039722' && x.breadCrumbs[0]?.text != 'NPS POR VENDEDOR'){
           dado.PROCESSO=   x.processId,
-           dado.TIPO=       'PROCESSO-LAND-CARE',
+           dado.TIPO=       x.breadCrumbs[0]?.text,
            dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
            dado.PROPOSTA=   null,
            dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
@@ -121,7 +125,7 @@ await  axios.request(config)
            dado.VENDEDOR=   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO PLANO')[0]?.indexerValue?.split('-')[0],
            dado.CILINDRADA= x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
            dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
-           dado.VALOR=      x.indexerVO.filter(f => f.indexerLabel=='VALOR')[0]?.indexerValue.replace(',','.') ||0 
+           dado.VALOR=       x.indexerVO.filter(f => f.indexerLabel=='VALOR')[0]?.indexerValue.replace('.','').replace(',','.') ||  x.indexerVO.filter(f => f.indexerLabel=='Valor Bônus')[0]?.indexerValue.replace('.','').replace(',','.') ||0 
         
       }
  
@@ -129,18 +133,20 @@ await  axios.request(config)
     if ( x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue == undefined
      &&  x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue == undefined
      && x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue == undefined
+     && x.breadCrumbs[0]?.text != 'VOUCHER JLR'
+     && x.breadCrumbs[0]?.text != 'LAND CARE JLR'
      ){
-     //  console.log('Processo: '+dado.PROCESSO+' - '+dado.CLIENTE+' nao tem Registro valido')
+      // console.log('Processo: '+dado.PROCESSO+' - '+dado.TIPO+' nao tem Registro valido')
  
      
     } else{
       arrayIntegrados.push(dado)
       apolise.push(dado) 
-       gravaSeguro(tomorrow(dado.DATA),
+        gravaSeguro(tomorrow(dado.DATA),
                   dado.PROPOSTA,
                   dado.CHASSI,
                   dado.VENDEDOR,
-                  dado.CLIENTE+' - '+dado.CPF_SEGURADO+' Processo: '+dado.PROCESSO,
+                  dado.CLIENTE+' - '+dado.CPF+' Processo: '+dado.PROCESSO,
                   dado.SEGURADORA,
                   dado.CILINDRADA,
                   dado.CPF,
@@ -266,8 +272,8 @@ const baseQueryEmpresa =
                                                                          where eu.nome = :vendedor))
 `; 
 
-async function getPropostaExistente(proposta) { 
-  console.log('Buscando Proposta: ' + proposta)
+async function getPropostaExistente(proposta,processo) { 
+  console.log('Buscando Proposta: ' + proposta +' / '+processo)
   const result = await database.simpleExecute(baseQuerySeguro,[proposta]); 
   console.log(result.rows?.length)
   return result.rows?.length || 0
@@ -298,11 +304,12 @@ function getTipoSeguradora (seguradora){
 
 function getCodServicoFi (tipo){ 
   let tipoFinal = 0
-  if(tipo == 'MAPFRE'){ tipoFinal  = 308}
   if(tipo == 'NPS VENDAS' ){ tipoFinal  = 402} 
-  if(tipo == 'PROCESSO-LAND-CARE' ){ tipoFinal  = 404} 
-  console.log('tipoFinal: '+tipoFinal)
-  return tipoFinal ||308
+  if(tipo == 'NPS POR VENDEDOR' ){ tipoFinal  = 308} 
+  if(tipo == 'LAND CARE JLR' ){ tipoFinal  = 404} 
+  if(tipo == 'VOUCHER JLR' ){ tipoFinal  = 406}
+  console.log('classificacao tipo_servico_fi: '+tipoFinal)
+  return tipoFinal || 405
 }
 
 
@@ -316,7 +323,7 @@ async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindra
                }
   
 
-  if (await getPropostaExistente(proposta) == 0 && await getProcessoExistente(processo) == 0){ 
+  if (await getPropostaExistente(proposta,processo) == 0 && await getProcessoExistente(processo) == 0){ 
     
     const sqlsequencia = `SELECT nbs.seq_fi_sequencia.NEXTVAL SEQ_FI FROM DUAL`
     const resultseq   = await database.simpleExecute(sqlsequencia)  
@@ -339,26 +346,40 @@ async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindra
                                                             ,processo                                                            
                                                             ,getTipoSeguradora(seguradora) || getCodServicoFi(tipo)
                                                             ,getCodServicoFi(tipo)
-                                                            ,cpf]); 
+                                                            ,cpf
+                                                          ]); 
     return null
   }   
 } 
  
  
+  function FormataData(dataFormat){
+    var data = dataFormat,
+        dia  = data.getDate().toString(),
+        diaF = (dia.length == 1) ? '0'+dia : dia,
+        mes  = (data.getMonth()+1).toString(), //+1 pois no getMonth Janeiro começa com zero.
+        mesF = (mes.length == 1) ? '0'+mes : mes,
+        anoF = data.getFullYear();
+    return diaF+"/"+mesF+"/"+anoF;
+  }
+
+ 
  
 
 const tomorrow = (dt) => {
 
+
   function FormataStringData(data) {
-    var dia  = data.split("/")[0];
-    var mes  = data.split("/")[1];
-    var ano  = data.split("/")[2];
-  
+
+    var data1 = data.substring(0,10)
+    var dia  = data1.split("/")[0];
+    var mes  = data1.split("/")[1];
+    var ano  = data1.split("/")[2];
+   
     return ano + '-' + ("0"+mes).slice(-2) + '-' + ("0"+dia).slice(-2);
     // Utilizo o .slice(-2) para garantir o formato com 2 digitos.
   }
-  
- 
+   
  
   // Creating the date instance
   let d = new Date(FormataStringData(dt));
