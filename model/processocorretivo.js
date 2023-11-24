@@ -11,7 +11,6 @@ async function find() {
   console.log('Procedimento executado com sucesso')
   return null
 }
-
-
+ 
 
 module.exports.find = find;

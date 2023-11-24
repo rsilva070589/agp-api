@@ -50,7 +50,7 @@ async function getUsuarios(context) {
 async function getRegras(context) {
   const baseQuery = 
   `select *
-    from COMISSOES_FAIXA x 
+    from VW_COMISSOES_FAIXA x 
     where 1=1     
   `;
 
@@ -841,7 +841,7 @@ const notaNPS = false
                                           
  
                                            
-  return arrayGestor.filter(f => f.COMISSAO > 0)
+  return arrayGestor.filter(f => f.COMISSAO != 0)
 }
 
 function qtdeVenda(valor){

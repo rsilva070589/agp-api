@@ -17,6 +17,7 @@ const agenda     = require('../controllers/agenda.js');
 const os         = require('../controllers/os.js');
 const empresas   = require('../controllers/empresas.js'); 
 const usuarios   = require('../controllers/usuarios.js'); 
+const funcoes   = require('../controllers/funcoes.js'); 
 const comissao   = require('../controllers/comissaoanalitica.js'); 
 const comissaoresumo = require('../controllers/comissaoresumo.js'); 
 const comissaocalculada = require('../controllers/comissaocalculada.js'); 
@@ -65,6 +66,9 @@ function verifyJWT(req, res, next){
 
 router.route('/vianuvem')
 .get(vianuvem.get);  
+
+router.route('/funcoes')
+.get(funcoes.get); 
 
 router.route('/fechamento/:ID?:MES?')
 .get(fechamento.get);  

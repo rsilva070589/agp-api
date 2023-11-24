@@ -3,7 +3,7 @@ const database = require('../services/database.js');
 
 const baseQuery = 
 `select *
-from COMISSOES_FAIXA x  
+from vw_COMISSOES_FAIXA x  
 where 1=1
 `;
 
