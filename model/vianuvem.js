@@ -53,10 +53,12 @@ async function getDados(){
   if(tokenvianuvem && (datatoken == new Date().getHours())) { 
     arrayIntegrados.pop()
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
-    await getVianuvem("Seguro registrado",null)
-    await getListaBusca()
-    await getListaNPS()
+    //await getVianuvem("Seguro registrado",null)
+    //await getListaBusca()
+    //await getListaNPS()
     await getVianuvem("",50039722) //Operacões montadora
+    //await getVianuvem("NPS POS VENDAS",)
+    //await getVianuvem("NPS VENDAS",)
     return  arrayIntegrados
   }
   
@@ -66,16 +68,16 @@ async function getDados(){
 async function getVianuvem(tipobusca,processTypeIds){ 
   var time = new Date();
   var dataBusca = new Date();
-  dataBusca.setDate(time.getDate() - 7); // Adiciona 3 dias
- 
+  dataBusca.setDate(time.getDate() - 10); // Adiciona 3 dias
+  console.log(tipobusca)
 
 let data = JSON.stringify({
   "documentId": '',
   "establishmentIds": [],
   "processTypeIds": [processTypeIds],
   "documentTypeIds": [],
-  "initialDate": FormataData(dataBusca) + " 00:37:28",
-  "finalDate": "",
+  "initialDate":    FormataData(dataBusca) + " 00:37:28",
+  "finalDate": " ",
   "searchFor": tipobusca,
   "like": false
 });
@@ -126,34 +128,55 @@ await  axios.request(config)
            dado.CILINDRADA= x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
            dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
            dado.VALOR=       x.indexerVO.filter(f => f.indexerLabel=='VALOR')[0]?.indexerValue.replace('.','').replace(',','.') ||  x.indexerVO.filter(f => f.indexerLabel=='Valor Bônus')[0]?.indexerValue.replace('.','').replace(',','.') ||0 
-        
+       // console.log(dado)
       }
  
+      if(processTypeIds == '50039722' && x.breadCrumbs[0]?.text != 'NPS POR VENDEDOR'){
+        dado.PROCESSO=   x.processId,
+         dado.TIPO=       x.breadCrumbs[0]?.text,
+         dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
+         dado.PROPOSTA=   null,
+         dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
+         dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],
+         dado.CPF=        x.indexerVO.filter(f => f.indexerLabel=='CPF')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
+         dado.CHASSI=     x.indexerVO.filter(f => f.indexerLabel=='CHASSI')[0]?.indexerValue,
+         dado.SEGURADORA= x.indexerVO.filter(f => f.indexerLabel=='SEGURADORAS')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='SEGURADORA')[0]?.indexerValue,
+         dado.VENDEDOR=   x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR DO PLANO')[0]?.indexerValue?.split('-')[0],
+         dado.CILINDRADA= x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
+         dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
+         dado.VALOR=       x.indexerVO.filter(f => f.indexerLabel=='VALOR')[0]?.indexerValue.replace('.','').replace(',','.') ||  x.indexerVO.filter(f => f.indexerLabel=='Valor Bônus')[0]?.indexerValue.replace('.','').replace(',','.') ||0 
+    //  console.log(dado)
+    }
+
+    if(  x.breadCrumbs[0]?.text == 'NPS GERAL'){
+      dado.PROCESSO=   x.processId,
+       dado.TIPO=       x.indexerVO.filter(f => f.indexerLabel=='Tipo NPS')[0]?.indexerValue,
+       dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
+       dado.PROPOSTA=   null, 
+       dado.EMPRESA=    x.processEstablishmentBreadCrumb[0], 
+       dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
+       dado.VALOR=       x.indexerVO.filter(f => f.indexerLabel=='Valor da Nota')[0]?.indexerValue.replace(',','.') ||0
+ 
+  }
+
         
     if ( x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue == undefined
      &&  x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue == undefined
      && x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue == undefined
      && x.breadCrumbs[0]?.text != 'VOUCHER JLR'
-     && x.breadCrumbs[0]?.text != 'LAND CARE JLR'
+     && x.breadCrumbs[0]?.text != 'LAND CARE JLR' 
+     && x.breadCrumbs[0]?.text != 'NPS GERAL'
      ){
       // console.log('Processo: '+dado.PROCESSO+' - '+dado.TIPO+' nao tem Registro valido')
  
      
     } else{
       arrayIntegrados.push(dado)
+    //  console.log(dado)
       apolise.push(dado) 
-        gravaSeguro(tomorrow(dado.DATA),
-                  dado.PROPOSTA,
-                  dado.CHASSI,
-                  dado.VENDEDOR,
-                  dado.CLIENTE+' - '+dado.CPF+' Processo: '+dado.PROCESSO,
-                  dado.SEGURADORA,
-                  dado.CILINDRADA,
-                  dado.CPF,
-                  dado.PROCESSO,
-                  dado.TIPO,
-                  dado.VALOR                  
-                  )      
+         gravaSeguro(dado             
+                  )        
+
     } 
     
     
@@ -194,7 +217,7 @@ select
           from agpdev.comissoes_faixa
          where PREMIO = 'NPS'
          group by (cod_empresa, cod_funcao))
-   and mes >= '10/2023'
+   and mes >= '11/2023'
    and nvl(u.diretoria,'N') <> 'S'
    and (nome, mes) not in
        (select fi.vendedor, to_char(fi.data_venda, 'mm/yyyy')
@@ -204,6 +227,7 @@ select
   const result = await database.simpleExecute(baseQueryCheckpoint); 
   console.log('qtde de NPS para busca' +result.rows?.length)
   result.rows.map(async x => {
+  
      await  getVianuvem(x.USUARIO,null)
   })
   
@@ -286,10 +310,22 @@ async function getProcessoExistente(processo) {
   return result.rows?.length || 0
 }
 
-async function getEmpresaVendedor(vendedor) { 
+async function getEmpresaVendedor(vendedor,empresa) { 
+   
+  let empresaDefinida = null
+  if(empresa == 'OGV') {empresaDefinida = 20}
+  if(empresa == 'TRIUMPH') {empresaDefinida = 41} 
+  if(empresa == 'TERRA MOTOS - CENTRO') {empresaDefinida = 11} 
+  if(empresa == 'TERRA MOTOS - JOSE BASTOS') {empresaDefinida = 13} 
+  if(empresa == 'TERRA MOTOS - SOBRAL') {empresaDefinida = 14} 
+  if(empresa == 'TRUCKFOR') {empresaDefinida = 30} 
+
+  
   console.log('Buscando Empresa Vendedor: ' + vendedor)
+  console.log(empresa)
+  console.log(empresaDefinida)
   const result = await database.simpleExecute(baseQueryEmpresa,[vendedor]); 
-  return result.rows[0]?.COD_EMPRESA  
+  return result.rows[0]?.COD_EMPRESA  || empresaDefinida
 }
 
 function getTipoSeguradora (seguradora){
@@ -308,15 +344,31 @@ function getCodServicoFi (tipo){
   if(tipo == 'NPS POR VENDEDOR' ){ tipoFinal  = 308} 
   if(tipo == 'LAND CARE JLR' ){ tipoFinal  = 404} 
   if(tipo == 'VOUCHER JLR' ){ tipoFinal  = 406}
+  if(tipo == 'NPS POS VENDAS' ){ tipoFinal  = 403}
+  if(tipo == 'NPS VENDAS' ){ tipoFinal  = 407}
+  if(tipo == 'FORECAST' ){ tipoFinal  = 408}
   console.log('classificacao tipo_servico_fi: '+tipoFinal)
   return tipoFinal || 405
 }
 
 
 
-async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente) {
-               console.log(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente)
-
+async function gravaSeguro(dado) {
+  console.log(dado)              
+  let  data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente,empresaString = null
+  data = tomorrow(dado.DATA),
+  proposta = dado.PROPOSTA,
+  chassi = dado.CHASSI,
+  vendedor = dado.VENDEDOR,
+  obs = dado.CLIENTE+' - '+dado.CPF+' Processo: '+dado.PROCESSO,
+  seguradora = dado.SEGURADORA,
+  cilindrada = dado.CILINDRADA,
+  cpf = dado.CPF,
+  processo = dado.PROCESSO,
+  tipo = dado.TIPO,
+  valor = dado.VALOR,
+  empresaString = dado.EMPRESA   
+  
                if (proposta?.length < 8){
                console.log(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo) 
                 proposta = null                
@@ -329,8 +381,9 @@ async function gravaSeguro(data,proposta,chassi,vendedor,obs,seguradora,cilindra
     const resultseq   = await database.simpleExecute(sqlsequencia)  
     const sequencia = resultseq.rows[0]['SEQ_FI']
 
-    var empresaVendedor = await getEmpresaVendedor(vendedor)
-    console.log('Empresa do Vendedor é : '+empresaVendedor)
+    var empresaVendedor = await getEmpresaVendedor(vendedor,empresaString)
+    console.log('Empresa string : '+empresaString )
+    console.log('Empresa do Vendedor é : '+empresaVendedor )
     
     console.log(sequencia)  
     console.log('Gravando Proposta/processo: ' + proposta||processo)
