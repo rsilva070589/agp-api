@@ -386,20 +386,34 @@ function somaValor(array) {
 function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) { 
  // console.log('inicio Funcao comissaoFINAL') 
   regrasComissaoFinal = []
- //console.log(arrayRegras)
+ console.log(meta)
+
+ 
+ function metaVendedor(tipo) {
+  let metaVendedor = 0
+  if (metaVendedor = meta.filter(fm => fm.TIPO == tipo).map(x => x.QTDE)[0]){
+    metaVendedor   = meta.filter(fm => fm.TIPO == tipo).map(x => x.QTDE)[0]
+  }else{
+    metaVendedor   = meta.filter(fm => fm.TIPO == 'META-VENDAS').map(x => x.QTDE)[0] 
+  }
+  console.log(metaVendedor)
+ return metaVendedor
+ }
+ 
+
   if (1) { 
     arrayRegras.filter(   f =>   f.USA_FAIXA == 'S' 
                               && f.MES == mes
                               && f.COD_EMPRESA == usuario.COD_EMPRESA
                               && f.COD_FUNCAO ==  usuario.COD_FUNCAO
-                              &&  meta[0]?.QTDE   >= f.QTDE_MIN
-                              &&  meta[0]?.QTDE   <= f.QTDE_MAX 
+                              &&  metaVendedor(f.TIPO_COMISSAO) >=  f.QTDE_MIN 
+                              &&  metaVendedor(f.TIPO_COMISSAO) <= f.QTDE_MAX 
                               &&  f.MEDIA_ACESSORIOS_MIN == null
                               &&  f.VALOR_MIN == null
                               &&  f.QTDE_MIN > 0 
                                                    
               ).map(x => {
-                  console.log('Bloco-1: '+x.TIPO_COMISSAO +' META: '+meta[0]?.QTDE + ' TIPO-PREMIO: '+ x.PREMIO)
+                  console.log('Bloco-1: '+x.TIPO_COMISSAO +' META: ' + ' TIPO-PREMIO: '+ x.PREMIO)
                       regrasComissaoFinal.push(x)
                                     })
 

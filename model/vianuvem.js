@@ -53,10 +53,10 @@ async function getDados(){
   if(tokenvianuvem && (datatoken == new Date().getHours())) { 
     arrayIntegrados.pop()
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
-    //await getVianuvem("Seguro registrado",null)
-    //await getListaBusca()
+    await getVianuvem("Seguro registrado",null)
+    await getListaBusca()
     //await getListaNPS()
-    await getVianuvem("",50039722) //Operacões montadora
+    //await getVianuvem("",50039722) //Operacões montadora
     //await getVianuvem("NPS POS VENDAS",)
     //await getVianuvem("NPS VENDAS",)
     return  arrayIntegrados
@@ -69,7 +69,7 @@ async function getVianuvem(tipobusca,processTypeIds){
   var time = new Date();
   var dataBusca = new Date();
   dataBusca.setDate(time.getDate() - 10); // Adiciona 3 dias
-  console.log(tipobusca)
+//  console.log(tipobusca)
 
 let data = JSON.stringify({
   "documentId": '',
@@ -354,7 +354,7 @@ function getCodServicoFi (tipo){
 
 
 async function gravaSeguro(dado) {
-  console.log(dado)              
+//  console.log(dado)              
   let  data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente,empresaString = null
   data = tomorrow(dado.DATA),
   proposta = dado.PROPOSTA,
