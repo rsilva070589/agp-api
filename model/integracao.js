@@ -581,31 +581,26 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
   const arrayVendasLista = []
   const arrayfiltroGestorFaixa = []    
   const arrayAjusteObjeto = []
-const notaNPS = false
- 
+  const notaNPS = false
 
-                                         
+  let  qtdeteste = 0
+ 
+                                        function vendas(){
                                           if(usuario?.GESTOR > 1){ 
-                                          arrayVendas.filter(f => f.COD_EMPRESA_VENDEDORA == usuario.COD_EMPRESA
-                                                                  &&    f.MES_VENDA  == mes
-                                                                  &&    f.TIPO       != 'DSR' 
-                                                                       ).map(x => {
-                                                                                    const dados = {
-                                                                                                  "COD_EMPRESA":  x.COD_EMPRESA_VENDEDORA,
-                                                                                                  "TIPO":         x.TIPO,
-                                                                                                  "TOTAL_VENDA":  arredonda(x.TOTAL_VENDA,2),
-                                                                                                  "MES_VENDA":    x.MES_VENDA,
-                                                                                                  "QTDE":         meta.TOTAL_VENDA ||0,
-                                                                                                  "ANALITICO":    x.ANALITICO,
-                                                                                                  "COMISSAO":    arredonda(x.TOTAL_VENDA * x.PERC,2) 
-                                                                                                  }
-                                                                                                  arrayFiltro.push(dados)
-                                                                                                  })
-                                          } 
-                                              if(usuario?.GESTOR == 'M'){
-                                                arrayVendas.filter(f => f.MARCA == usuario.MARCA 
-                                                  &&    f.MES_VENDA == mes
-                                                  ).map(x => {
+                                            return arrayVendas.filter(f => f.COD_EMPRESA_VENDEDORA == usuario.COD_EMPRESA
+                                                                        &&    f.MES_VENDA  == mes
+                                                                        &&    f.TIPO       != 'DSR' 
+                                                  )
+                                          }
+
+                                          if(usuario?.GESTOR == 'M'){
+                                            return arrayVendas.filter(f => f.MARCA == usuario.MARCA 
+                                              &&    f.MES_VENDA == mes)
+                                          }
+                                        }                                         
+                                 
+                                              if(1){
+                                                vendas().map(x => {
                                                                                     const dados = {
                                                                                                   "COD_EMPRESA":  x.COD_EMPRESA_VENDEDORA,
                                                                                                   "TIPO":         x.TIPO,
@@ -726,16 +721,58 @@ const notaNPS = false
 
 
                                            //GESTOR COM FAIXA
-                                           arrayVendas.map(x => x.ANALITICO.map(n1 => {arrayVendasLista.push(n1)}))
+                                           vendas().map(x => x.ANALITICO.map(n1 => {arrayVendasLista.push(n1)}))
 
- 
+                                              
                                            arrayRegras.filter(f => f.MES==mes && f.COD_EMPRESA == usuario.COD_EMPRESA && f.COD_FUNCAO == usuario.COD_FUNCAO && f.USA_FAIXA == 'S').map(r => {
-                                            arrayVendasLista.filter(
-                                              f =>   f.MARCA == usuario.MARCA
-                                                  && f.MES_VENDA == mes
-                                                  && f.TIPO == r.TIPO_COMISSAO
-                                          ).map(item => {  
-                                             
+
+                                            metaVlr = somaValor( vendas().filter(f =>  f.TIPO == r.TIPO_COMISSAO).map(x=> x.TOTAL_VENDA))
+
+                                                    console.log('valor da META gestor - '+metaVlr)
+                                                    vendas().map(item => {  
+
+                                                                    //faixa valor meta
+                                                                    arrayRegras.filter(f =>  f.MES   == mes
+                                                                      && f.COD_EMPRESA == usuario.COD_EMPRESA
+                                                                      && f.COD_FUNCAO  == usuario.COD_FUNCAO
+                                                                      && f.USA_FAIXA   == 'S' 
+                                                                    // && f.PERC_MIN    == 0
+                                                                      && metaVlr >= f.VALOR_MIN    
+                                                                      && metaVlr <  f.VALOR_MAX     
+                                                                      &&  f.MEDIA_ACESSORIOS_MIN == null
+                                                                      &&  f.TIPO_COMISSAO == item.TIPO
+                                                                      ).map(rf => {  
+                                                                      //  console.log(item.ANALITICO)
+                                                                        item.ANALITICO.map(item1 => {
+                                                                          var dadosVendas  = {
+                                                                            "CHASSI": item1.CHASSI,                                                                                         
+                                                                            "CPF": item1.COD_CLIENTE,
+                                                                            "DATA_VENDA": item1.DATA_VENDA,
+                                                                            "COD_EMPRESA": item1.EMPRESA,
+                                                                            "MES_VENDA": item1.MES_VENDA,
+                                                                            "NOME_CLIENTE": item1.NOME_CLIENTE,
+                                                                            "PROPOSTA": item1.COD_PROPOSTA,
+                                                                            "DESCRICAO_MODELO": item1.DESCRICAO_MODELO,
+                                                                            "COD_PROPOSTA": item1.COD_PROPOSTA,
+                                                                            "MARGEM_VENDA": item1.MARGEM_VENDA,
+                                                                            "TOTAL_VENDA": item1.TOTAL_VENDA,
+                                                                            "TIPO": item1.TIPO,
+                                                                            "QTDE": item1.QTDE,
+                                                                            "PERCENTUAL": rf.PERC,
+                                                                            "COMISSAO": arredonda(item1.TOTAL_VENDA * rf.PERC,2) ,
+                                                                            "VENDEDOR":       item1.VENDEDOR                                                                       
+                                                                            } 
+                                                                        
+                                                                            if(arrayfiltroGestorFaixa.filter(f => f.COD_PROPOSTA == item1.COD_PROPOSTA ).length == 0){
+                                                                              // console.log(dadosVendas)
+                                                                              arrayfiltroGestorFaixa.push(dadosVendas) 
+                                                                             }
+                                                                        })                                                                                                                                          
+                                                                     
+                                                                    }) 
+
+
+                                                              //faixa percentual
                                                               arrayRegras.filter(f =>  f.MES   == mes
                                                                                   && f.COD_EMPRESA == usuario.COD_EMPRESA
                                                                                   && f.COD_FUNCAO  == usuario.COD_FUNCAO
@@ -745,7 +782,7 @@ const notaNPS = false
                                                                                   &&  f.MEDIA_ACESSORIOS_MIN == null
                                                                                   &&  f.TIPO_COMISSAO == item.TIPO
                                                                               ).map(rf => {  
-                                                                           
+                                                                         //  console.log(item)
                                                                                  var dadosVendas  = {
                                                                                   "CHASSI": item.CHASSI,                                                                                         
                                                                                   "CPF": item.COD_CLIENTE,
@@ -769,9 +806,13 @@ const notaNPS = false
                                                                                    // console.log(dadosVendas)
                                                                                    arrayfiltroGestorFaixa.push(dadosVendas) 
                                                                                   }
-                                                                              })                                              
+                                                                              })   
 
-                                                          })    
+                                                                              
+                                                          })
+
+                                                          
+                                                          
                                                           
 
                                         if(r.PREMIO=='S' && arrayGestor.filter(f => f.TIPO==r.TIPO_COMISSAO).length == 0){
@@ -827,6 +868,8 @@ const notaNPS = false
                                             }  
 
                                           })
+
+                                          
 
                                           
                                           arrayRegras.filter(f =>  f.MES   == mes
