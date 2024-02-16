@@ -55,10 +55,9 @@ async function getDados(){
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
     await getVianuvem("Seguro registrado",null)
     await getListaBusca()
-    //await getListaNPS()
-    //await getVianuvem("",50039722) //Operacões montadora
-    //await getVianuvem("NPS POS VENDAS",)
-    //await getVianuvem("NPS VENDAS",)
+     await getVianuvem("",50039722) //Operacões montadora 
+    await getVianuvem("NPS POS VENDAS",)
+    await getVianuvem("NPS VENDAS",)
     return  arrayIntegrados
   }
   
@@ -148,6 +147,23 @@ await  axios.request(config)
     //  console.log(dado)
     }
 
+    if(processTypeIds == '50039722' && x.breadCrumbs[0]?.text == 'RFT-JLR (Royal Words)'){
+      dado.PROCESSO=   x.processId,
+       dado.TIPO=       'RFT-JLR',
+       dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
+       dado.PROPOSTA=   null,
+       dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
+       dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],
+       dado.CPF=        x.indexerVO.filter(f => f.indexerLabel=='CPF')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue,
+       dado.CHASSI=     x.indexerVO.filter(f => f.indexerLabel=='CHASSI')[0]?.indexerValue,
+       dado.SEGURADORA= x.indexerVO.filter(f => f.indexerLabel=='SEGURADORAS')[0]?.indexerValue || x.indexerVO.filter(f => f.indexerLabel=='SEGURADORA')[0]?.indexerValue,
+       dado.VENDEDOR=   'ROMULO',
+       dado.CILINDRADA= x.indexerVO.filter(f => f.indexerLabel=='CILIDRADA')[0]?.indexerValue ||x.indexerVO.filter(f => f.indexerLabel=='CILINDRADA')[0]?.indexerValue,
+       dado.CPF_SEGURADO=x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ DO SEGURADO')[0]?.indexerValue ,
+       dado.VALOR=       x.indexerVO.filter(f => f.indexerLabel=='REALIZADO')[0]?.indexerValue.replace('.','').replace(',','.')||0 
+    console.log(dado)
+  }
+
     if(  x.breadCrumbs[0]?.text == 'NPS GERAL'){
       dado.PROCESSO=   x.processId,
        dado.TIPO=       x.indexerVO.filter(f => f.indexerLabel=='Tipo NPS')[0]?.indexerValue,
@@ -166,6 +182,7 @@ await  axios.request(config)
      && x.breadCrumbs[0]?.text != 'VOUCHER JLR'
      && x.breadCrumbs[0]?.text != 'LAND CARE JLR' 
      && x.breadCrumbs[0]?.text != 'NPS GERAL'
+     && x.breadCrumbs[0]?.text != 'RFT-JLR (Royal Words)'
      ){
       // console.log('Processo: '+dado.PROCESSO+' - '+dado.TIPO+' nao tem Registro valido')
  
@@ -335,6 +352,7 @@ function getTipoSeguradora (seguradora){
   if(seguradora == 'ALLIANZ'){ tipo = 125}  
   if(seguradora == 'PORTO SEGURO'){ tipo = 126}
   if(seguradora == 'TOKIO MARINE'){ tipo = 127}
+  if(seguradora == 'HDI'){ tipo = 128}
   return tipo 
 }
 
@@ -344,6 +362,7 @@ function getCodServicoFi (tipo){
   if(tipo == 'NPS POR VENDEDOR' ){ tipoFinal  = 308} 
   if(tipo == 'LAND CARE JLR' ){ tipoFinal  = 404} 
   if(tipo == 'VOUCHER JLR' ){ tipoFinal  = 406}
+  if(tipo == 'RFT-JLR' ){ tipoFinal  = 409}
   if(tipo == 'NPS POS VENDAS' ){ tipoFinal  = 403}
   if(tipo == 'NPS VENDAS' ){ tipoFinal  = 407}
   if(tipo == 'FORECAST' ){ tipoFinal  = 408}
@@ -354,11 +373,18 @@ function getCodServicoFi (tipo){
 
 
 async function gravaSeguro(dado) {
-//  console.log(dado)              
+//  console.log(dado)      
+ let chassiCorrigido = ''
+ if ((dado.chassi?.length || 1) > 17){
+    chassiCorrigido = dado.CHASSI.substring(0,17) 
+ }else{
+  chassiCorrigido = dado.CHASSI
+ }
+
   let  data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo,valor,cliente,empresaString = null
   data = tomorrow(dado.DATA),
   proposta = dado.PROPOSTA,
-  chassi = dado.CHASSI,
+  chassi = chassiCorrigido,
   vendedor = dado.VENDEDOR,
   obs = dado.CLIENTE+' - '+dado.CPF+' Processo: '+dado.PROCESSO,
   seguradora = dado.SEGURADORA,

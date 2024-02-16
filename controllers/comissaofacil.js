@@ -42,7 +42,8 @@ function getItemFromRec(req) {
     MODELO:  req.body.MODELO,
     DIA:     req.body.DIA,
     STATUS:   req.body.STATUS,
-    GRUPO_COTA:   req.body.GRUPO_COTA
+    GRUPO_COTA:   req.body.GRUPO_COTA,
+    ID: req.body.ID
   };
 
   return itemAvulso;
@@ -66,7 +67,7 @@ async function put(req, res, next) {
   try {
  
     let item = getItemFromRec(req);
-    item = await comissaofacil.update(item, req.params.id); 
+    item = await comissaofacil.update(item, res); 
     
 
    
@@ -86,10 +87,10 @@ module.exports.put = put;
  
 async function del(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.ID, 10);
     console.log(req.params)
 
-    const success = await comissaofacil.delete(id);
+    const success = await comissaofacil.delete(req);
 
     if (success) {
       res.status(204).end();

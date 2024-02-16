@@ -15,9 +15,7 @@ var notaNPS = 100
             mesF = (mes.length == 1) ? '0'+mes : mes,
             anoF = data.getFullYear();
 
-        if (dia < 7){          
-          mesF = '0'+(mesF-1) 
-        }            
+        //if (dia < 7){  mesF = '0'+(mesF-1)   }            
         return mesF +"/"+anoF;
         } 
 
@@ -123,6 +121,9 @@ async function getVendas(context) {
 
   
   let query = null;
+
+  console.log('o context Mes é: '+context.MES)
+  console.log('o Mes Atual é: '+mesAtual())
 
   if ( context.MES != mesAtual()){
     query = baseQueryFechada
@@ -488,10 +489,11 @@ function valorComissao(empresa, tipo, vlr_venda,arrayVendas,colaborador,qtde_nps
 }
 
 function comissaoPerc(empresa, tipo, meta){
+
+  console.log(tipo +'  - Empresa -   '+ empresa  )
   var perc_valor = 0        
-  regrasComissaoFinal.filter(f => f.COD_EMPRESA == empresa && f.TIPO_COMISSAO == tipo ).map(x => {    
-      
-    
+  regrasComissaoFinal.filter(f => f.COD_EMPRESA == empresa && f.TIPO_COMISSAO == tipo ).map(x => { 
+ 
           if (x.PERC > 0) {
               perc_valor = x.PERC 
           } 
@@ -508,8 +510,10 @@ function comissaoPerc(empresa, tipo, meta){
           }             
           if (x.PREMIO == 'DSR') {                                                      
               perc_valor = x.PERC
-          }   
+          }            
+         
       })
+     
    
   return perc_valor    
 
@@ -537,7 +541,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                                                           "PROPOSTA":     x.COD_PROPOSTA,
                                                           "CPF":          x.COD_CLIENTE,
                                                           "COMISSAO":     arredonda(valorComissao(x.COD_EMPRESA_VENDEDORA, x.TIPO, x.TOTAL_VENDA, arrayVendas,usuario,arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.QTDE),2),
-                                                          "PERCENTUAL":   comissaoPerc(x.COD_EMPRESA_VENDEDORA, x.TIPO,meta) * 100,
+                                                          "PERCENTUAL":   comissaoPerc(usuario.COD_EMPRESA, x.TIPO,meta) * 100,
                                                           "QTDE":         x.QTDE,
                                                           "CLASSE":       arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.CLASSE,
                                                           "APELIDO":      arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.APELIDO,
@@ -545,7 +549,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                                                           "GANHOS":       somaValor(x.ANALITICO.map(x => x.GANHOS)) ,
                                                           "ANALITICO":    x.ANALITICO,
                                                           "BLOCO": "NORMAL",
-                                                          "PERC": comissaoPerc(x.COD_EMPRESA_VENDEDORA, x.TIPO,meta) || 0,
+                                                          "PERC": comissaoPerc(usuario.COD_EMPRESA, x.TIPO,meta) || 0,
                                                           
 
                                                       } 
@@ -742,7 +746,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                                       &&  f.MEDIA_ACESSORIOS_MIN == null
                                                                       &&  f.TIPO_COMISSAO == item.TIPO
                                                                       ).map(rf => {  
-                                                                      //  console.log(item.ANALITICO)
+                                                                       // console.log(item.ANALITICO.length)
                                                                         item.ANALITICO.map(item1 => {
                                                                           var dadosVendas  = {
                                                                             "CHASSI": item1.CHASSI,                                                                                         
@@ -763,10 +767,12 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                                             "VENDEDOR":       item1.VENDEDOR                                                                       
                                                                             } 
                                                                         
-                                                                            if(arrayfiltroGestorFaixa.filter(f => f.COD_PROPOSTA == item1.COD_PROPOSTA ).length == 0){
+                                                                            if(arrayfiltroGestorFaixa.length < item.ANALITICO.length ){
                                                                               // console.log(dadosVendas)
                                                                               arrayfiltroGestorFaixa.push(dadosVendas) 
                                                                              }
+
+                                                                             
                                                                         })                                                                                                                                          
                                                                      
                                                                     }) 
@@ -892,10 +898,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                             "ANALITICO": arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.PERCENTUAL == r.PERC)
                                                             }              
                                                 arrayGestor.push(valorTotalDpto) 
-                                        })
-
-
-                                          
+                                        }) 
  
                                            
   return arrayGestor.filter(f => f.COMISSAO != 0)
@@ -919,8 +922,6 @@ function formataDinheiro(item) {
     .replace(".", ",")
     .replace(/(\d)(?=(\d{3})+\,)/g, "$1.");
 }
-
- 
 
 
 module.exports.find = find;

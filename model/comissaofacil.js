@@ -210,10 +210,7 @@ const createSqlComissaoAvulsa =
    const updateSql =
  `update agpdev.comissao_avulsa 
   set   
-   COD_EMPRESA = :COD_EMPRESA
-  ,TIPO        = :TIPO
-  ,VENDEDOR    = :VENDEDOR
- 
+   COD_EMPRESA = :COD_EMPRESA 
   ,COD_CLIENTE = :COD_CLIENTE
   ,CHASSI      = :CHASSI
   ,REGISTRO    = :REGISTRO
@@ -230,15 +227,12 @@ const createSqlComissaoAvulsa =
   `
   ;
 
-async function update(emp,id) {
+async function update(emp,res) {
   const obj = Object.assign({}, emp); 
-  console.log(obj) 
-  console.log(id) 
+  console.log(obj)  
   const result = await database.simpleExecute(updateSql,
                                                 [  
-                                                  obj.COD_EMPRESA, 
-                                                  obj.TIPO,
-                                                  obj.VENDEDOR,                                                   
+                                                  obj.COD_EMPRESA,                                              
                                                   obj.COD_CLIENTE,
                                                   obj.CHASSI,
                                                   obj.REGISTRO,
@@ -250,7 +244,7 @@ async function update(emp,id) {
                                                   obj.DIA,
                                                   obj.STATUS,
                                                   obj.GRUPO_COTA,
-                                                  id
+                                                  obj.ID
                                                 ], 
                                            { autoCommit: true });
   return obj;  
@@ -266,9 +260,9 @@ const deleteSql =
     where ID = :ID
  `;
 
-async function del(id) {
- console.log('deletando ID: '+id)
-  const result = await database.simpleExecute(deleteSql, [id], { autoCommit: true });
+async function del(req) {
+ console.log('deletando ID: '+req.body.ID) 
+  const result = await database.simpleExecute(deleteSql, [req.body.ID || 0], { autoCommit: true });
 
   return result;
 }
