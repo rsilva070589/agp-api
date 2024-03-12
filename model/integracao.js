@@ -318,7 +318,7 @@ async function getVendas(context) {
 
 async function find(context) {   
   const arrayUsuarios = await getUsuarios(context) 
-  context.COD_FUNCAO = arrayUsuarios[0].COD_FUNCAO
+  context.COD_FUNCAO = arrayUsuarios[0]?.COD_FUNCAO
   const arrayRegras = await getRegras(context) 
   //console.log(arrayUsuarios[0].GESTOR)
 
@@ -549,8 +549,8 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                                                           "GANHOS":       somaValor(x.ANALITICO.map(x => x.GANHOS)) ,
                                                           "ANALITICO":    x.ANALITICO,
                                                           "BLOCO": "NORMAL",
-                                                          "PERC": comissaoPerc(usuario.COD_EMPRESA, x.TIPO,meta) || 0,
-                                                          
+                                                          "PERC": comissaoPerc(usuario.COD_EMPRESA, x.TIPO,meta) || 0,     
+                                                          "EXIBIR_ZERADO": arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.EXIBIR_ZERADO,
 
                                                       } 
                                                       arrayFiltro.push(dados)             
@@ -562,7 +562,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                               "COD_EMPRESA":  usuario.COD_EMPRESA,
                               "MES_VENDA":    mes,                                                            
                               "VENDEDOR":     usuario.NOME,
-                              "TOTAL_VENDA":  0,                        
+                              "TOTAL_VENDA":  meta.filter(f => f.TIPO == bonus.TIPO_COMISSAO)[0]?.TOTAL_VENDA || 0,                        
                               "COMISSAO":     arredonda(valorComissao(usuario.COD_EMPRESA, bonus.TIPO_COMISSAO, bonus.VALOR,arrayVendas,usuario,arrayRegras.filter(f => f.TIPO_COMISSAO == bonus.TIPO_COMISSAO)[0]?.QTDE)),
                               "PERCENTUAL":   0,
                               "APELIDO":      arrayRegras.filter(f => f.TIPO_COMISSAO == bonus.TIPO_COMISSAO)[0]?.APELIDO,                              
@@ -570,6 +570,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                               "BLOCO": 'PREMIO',
                               "CLASSE":       'PREMIACOES',
                               "PERC":  0,
+                              "EXIBIR_ZERADO": arrayRegras.filter(f => f.TIPO_COMISSAO == bonus.TIPO_COMISSAO)[0]?.EXIBIR_ZERADO
                           } 
   arrayFiltro.push(dados)     
   })
@@ -699,6 +700,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                     "GANHOS":   somaValor(arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]?.map(x => x.GANHOS)|| 0),
                                                     "BLOCO": "4",
                                                     "PERC": percentual,
+                                                    "EXIBIR_ZERADO": r.EXIBIR_ZERADO,
                                                     "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
                                                                           } 
                                                       arrayGestor.push(valorTotalDpto)  
@@ -763,6 +765,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                                             "TIPO": item1.TIPO,
                                                                             "QTDE": item1.QTDE,
                                                                             "PERCENTUAL": rf.PERC,
+                                                                            "EXIBIR_ZERADO": rf.EXIBIR_ZERADO,
                                                                             "COMISSAO": arredonda(item1.TOTAL_VENDA * rf.PERC,2) ,
                                                                             "VENDEDOR":       item1.VENDEDOR                                                                       
                                                                             } 
@@ -805,7 +808,8 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                                                                   "QTDE": item.QTDE,
                                                                                   "PERCENTUAL": rf.PERC,
                                                                                   "COMISSAO": arredonda(item.TOTAL_VENDA * rf.PERC,2) ,
-                                                                                  "VENDEDOR":       usuario.NOME                                                                       
+                                                                                  "VENDEDOR":       usuario.NOME,
+                                                                                  "EXIBIR_ZERADO": rf.EXIBIR_ZERADO,                                                                   
                                                                                   } 
                                                                               
                                                                                   if(arrayfiltroGestorFaixa.filter(f => f.COD_PROPOSTA == item.COD_PROPOSTA ).length == 0){
@@ -831,6 +835,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                           "USA_FAIXA": 'S',
                                           "APELIDO": r.APELIDO,
                                           "BLOCO": "7",
+                                          "EXIBIR_ZERADO": r.EXIBIR_ZERADO,
                                           "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
                                                           }              
                                               arrayGestor.push(valorTotalDpto)  
@@ -846,6 +851,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                           "USA_FAIXA": 'S',
                                           "APELIDO": r.APELIDO,
                                           "BLOCO": "8",
+                                          "EXIBIR_ZERADO": r.EXIBIR_ZERADO,
                                           "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
                                                           }              
                                               arrayGestor.push(valorTotalDpto)  
@@ -868,6 +874,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                             "USA_FAIXA": 'S',
                                             "APELIDO": r.APELIDO,
                                             "BLOCO": "7",
+                                            "EXIBIR_ZERADO": r.EXIBIR_ZERADO,
                                             "ANALITICO": arrayFiltro.filter(f => f.TIPO == r.TIPO_COMISSAO).map(x => x.ANALITICO)[0]
                                                             }              
                                                 arrayGestor.push(valorTotalDpto)  
@@ -894,6 +901,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                             "USA_FAIXA": 'S',
                                             "APELIDO": r.APELIDO,
                                             "BLOCO": "9",
+                                            "EXIBIR_ZERADO": r.EXIBIR_ZERADO,
                                             "PERC": r.PERC,
                                             "ANALITICO": arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.PERCENTUAL == r.PERC)
                                                             }              
@@ -901,7 +909,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                         }) 
  
                                            
-  return arrayGestor.filter(f => f.COMISSAO != 0)
+  return arrayGestor.filter(f => f.COMISSAO != 0 || f.EXIBIR_ZERADO == 'S')
 }
 
 function qtdeVenda(valor){
