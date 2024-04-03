@@ -422,8 +422,10 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
                                 && f.MES == mes
                                 && f.COD_EMPRESA == usuario.COD_EMPRESA
                                 && f.COD_FUNCAO ==  usuario.COD_FUNCAO
-                                &&  somaVendaAcessorio(arrayVendas,usuario,mes) >= f.MEDIA_ACESSORIOS_MIN
-                                &&  somaVendaAcessorio(arrayVendas,usuario,mes) <  f.MEDIA_ACESSORIOS_MAX
+                                && metaVendedor('MEDIA-ACESSORIOS') >= f.MEDIA_ACESSORIOS_MIN
+                                && metaVendedor('MEDIA-ACESSORIOS') <  f.MEDIA_ACESSORIOS_MAX
+                           //     &&  somaVendaAcessorio(arrayVendas,usuario,mes) >= f.MEDIA_ACESSORIOS_MIN
+                           //     &&  somaVendaAcessorio(arrayVendas,usuario,mes) <  f.MEDIA_ACESSORIOS_MAX
                                 &&  f.MEDIA_ACESSORIOS_MIN > 0 
                                 &&  f.VALOR_MIN == null
                                           ).map(x => {
@@ -520,7 +522,7 @@ function comissaoPerc(empresa, tipo, meta){
 }
 
 function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRegras) {  
-  const arrayFiltro = []  
+  const arrayFiltro = []
 
   arrayVendas.filter(f => f.MES_VENDA == mes 
                                   && f.VENDEDOR == usuario.NOME                                      
@@ -543,7 +545,7 @@ function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRe
                                                           "COMISSAO":     arredonda(valorComissao(x.COD_EMPRESA_VENDEDORA, x.TIPO, x.TOTAL_VENDA, arrayVendas,usuario,arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.QTDE),2),
                                                           "PERCENTUAL":   comissaoPerc(usuario.COD_EMPRESA, x.TIPO,meta) * 100,
                                                           "QTDE":         x.QTDE,
-                                                          "CLASSE":       arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.CLASSE,
+                                                          "CLASSE":       arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO && f.COD_FUNCAO ==  usuario.COD_FUNCAO && f.COD_EMPRESA == usuario.COD_EMPRESA)[0].CLASSE,
                                                           "APELIDO":      arrayRegras.filter(f => f.TIPO_COMISSAO == x.TIPO)[0]?.APELIDO,
                                                           "DESPESAS":     somaValor(x.ANALITICO.map(x => x.DESPESAS)) ,
                                                           "GANHOS":       somaValor(x.ANALITICO.map(x => x.GANHOS)) ,
@@ -898,6 +900,7 @@ function comissaoSupervisor(arrayVendas,mes,usuario,meta,arrayRegras) {
                                             "VENDEDOR":       usuario.NOME,
                                             "TIPO":           r.TIPO_COMISSAO,
                                             "COMISSAO":       somaValor(arrayfiltroGestorFaixa.filter(f => f.TIPO == r.TIPO_COMISSAO && f.MES_VENDA   == mes  && f.PERCENTUAL == r.PERC).map(x => x.COMISSAO)),
+                                            "CLASSE": r.CLASSE,
                                             "USA_FAIXA": 'S',
                                             "APELIDO": r.APELIDO,
                                             "BLOCO": "9",
