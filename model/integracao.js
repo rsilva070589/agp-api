@@ -39,9 +39,7 @@ async function getUsuarios(context) {
     query += `\nand x.NOME = :NOME`;
   }
 
-  const result = await database.simpleExecute(query, binds);
- // console.log(query)
- // console.log('USUARIOS - numero de linhas retorno é: '+result.rows.length)
+  const result = await database.simpleExecute(query, binds); 
   return result.rows
 }
 
@@ -82,8 +80,7 @@ async function getMeta(context) {
   `;
 
   
- 
-//console.log('O MES ATUAL : '+mesAtual() +' e o MES CONTEXT : '+context.MES)
+  
 
   let query = null
   if ( context.MES != mesAtual()){
@@ -98,11 +95,9 @@ async function getMeta(context) {
     query += `\nand x.MES_VENDA = :MES`;
   }
 
-
- //console.log(query)
+ 
   const result = await database.simpleExecute(query, binds); 
-  
- // console.log('Meta - numero de linhas retorno é: '+result.rows.length)
+   
   return result.rows
 }
 
@@ -241,15 +236,10 @@ async function getVendas(context) {
 
   queryGroup += ` \group by COD_EMPRESA_VENDEDORA,VENDEDOR,MES_VENDA,MARCA,TIPO`;
   
-  //console.log(context) 
-   //console.log(queryGroup) 
   const resultGroup = await database.simpleExecute(queryGroup, bindsGroup);
   const result = await database.simpleExecute(query, binds);
   const arrayVendaLista = []
   const arrayVendaGroup = [] 
-  //console.log('numero de linhas retorno é: '+result.rows.length)
-  
-  //console.log('numero de linhas Agrupadas é: '+resultGroup.rows.length)
   
   function dataAtualFormatada(dataFormat){
     var data = dataFormat,
@@ -320,7 +310,6 @@ async function find(context) {
   const arrayUsuarios = await getUsuarios(context) 
   context.COD_FUNCAO = arrayUsuarios[0]?.COD_FUNCAO
   const arrayRegras = await getRegras(context) 
-  //console.log(arrayUsuarios[0].GESTOR)
 
   if (arrayUsuarios[0].GESTOR > 0){
     context.COD_EMPRESA = arrayUsuarios[0].GESTOR
@@ -341,7 +330,6 @@ async function find(context) {
 
   const metaGet   = await getMeta(context)
   const meta =  metaGet.filter(f=> f.VENDEDOR==usuario?.NOME)
- // console.log(meta)
 
   if (!usuario?.NOME){
        usuario  = arrayUsuarios.filter(f=> f.NOME == context.NOME).map(x => x)[0]
@@ -385,9 +373,7 @@ function somaValor(array) {
 }
 
 function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) { 
- // console.log('inicio Funcao comissaoFINAL') 
   regrasComissaoFinal = []
- console.log(meta)
 
  
  function metaVendedor(tipo) {
@@ -397,7 +383,7 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
   }else{
     metaVendedor   = meta.filter(fm => fm.TIPO == 'META-VENDAS').map(x => x.QTDE)[0] 
   }
-  console.log(metaVendedor)
+  
  return metaVendedor
  }
  
@@ -450,7 +436,7 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
                               && f.COD_EMPRESA == usuario.COD_EMPRESA
                               && f.COD_FUNCAO ==  usuario.COD_FUNCAO
                                     ).map(x => {
-                                      console.log('Bloco-4: '+x.TIPO_COMISSAO)
+                                    //  console.log('Bloco-4: '+x.TIPO_COMISSAO)
                                   //    console.log(x)
                                       regrasComissaoFinal.push(x)
                                     })            
@@ -523,6 +509,11 @@ function comissaoPerc(empresa, tipo, meta){
 
 function comissaoColaboradores(arrayVendas,tipoComissao,usuario,mes,meta,arrayRegras) {  
   const arrayFiltro = []
+  
+console.log(arrayVendas.filter(f => f.MES_VENDA == mes 
+  && f.VENDEDOR == usuario.NOME                                      
+  && f.TIPO == 'OFICINA-MDO-ACESSORIOS'
+  ))
 
   arrayVendas.filter(f => f.MES_VENDA == mes 
                                   && f.VENDEDOR == usuario.NOME                                      

@@ -29,40 +29,14 @@ const integracao  = require('../controllers/integracao.js');
 const integracaoNew  = require('../controllers/integracaoNew.js');
 const vianuvem    = require('../controllers/vianuvem.js');
 const fechamento  = require('../controllers/fechamento.js');
+const login  = require('../controllers/login.js');
 
 require("dotenv-safe").config();
 const jwt = require('jsonwebtoken');
- 
- 
-//authentication
-router.route('/login')
-.post((req, res, next) => {
-  if(req.body.USER === 'integracao@grupoagp.com.br' && req.body.PASSWORD === '@asdfnk#'){
-    //auth ok
-    const id = 1; 
-    const token = jwt.sign({ id }, process.env.SECRET, {
-      expiresIn: 300 // expires in 5min
-    });
-    return res.json({ auth: true, token: token });
-  }
-  
-  res.status(500).json({message: 'Login inválido!'});
-})
 
-function verifyJWT(req, res, next){
-  const token = req.headers['authorization'];
-  if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
-  console.log(req.headers['authorization'])
-  console.log(process.env.SECRET)
-  
-  jwt.verify(token, process.env.SECRET, function(err, decoded) {
-    if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
-    
-    // se tudo estiver ok, salva no request para uso posterior
-    req.userId = decoded.id;
-    next();
-  });
-}
+router.route('/login')
+.post( login.get  ) ;
+ 
 
 router.route('/vianuvem')
 .get(vianuvem.get);  
@@ -72,23 +46,7 @@ router.route('/funcoes')
 
 router.route('/fechamento/:ID?:MES?')
 .get(fechamento.get);  
-
-router.route('/integracao/',)
-.post(verifyJWT,
-  [
-    body("CPF").isInt().withMessage("Informe CPF"),
-    body("CPF").isLength({ min: 11, max: 11 }).withMessage("CPF precisa ter 11 digitos sem traços ou pontos"),
-    body("MES").notEmpty().withMessage("Informe Mês ex: MM/YYYY"), 
-  ],
-   (req, res, next) => {    
-           const errors = validationResult(req);  
-           if(!errors.isEmpty()){
-             return res.status(400).json({errors: errors.array()});
-           }  
-           return next();
-          }
-   ,integracao.get
-  )
+ 
 
 
  
@@ -109,8 +67,7 @@ router.route('/comissao/',)
    ,integracao.get
   )
 
-  router.route('/newcomissao/',)
-.post(
+  router.route('/newcomissao/',).post(
   [
     body("CPF").isInt().withMessage("Informe CPF"),
     body("CPF").isLength({ min: 11, max: 11 }).withMessage("CPF precisa ter 11 digitos sem traços ou pontos"),
@@ -221,7 +178,7 @@ router.route('/regracomissao/:id?')
 router.route('/checkpoint/:id?')
 .get(checkpoint.get);
 
-router.route('/checkpoint/:id?')
+router.route('/frota/:id?')
 .get(frota.get); 
 
 router.route('/agenda/:id?')
@@ -241,6 +198,10 @@ router.route('/agenda/:id?')
     body("RECLAMACAO").isLength({ min: 1, max: 99 }).withMessage("Informe o Reparo para o veiculo"),
     body("CONSULTOR").isLength({ min: 3, max: 10 }).withMessage("O campo CONSULTOR deve existir um LOGIN no NBS. min 3 e max 10"),
      //body("DATA_AGENDADA").isISO8601('dd/mm/yyyy').isDate().withMessage("Informe uma data de agendamento!"),
+     
+     body("TIPO_ATENDIMENTO").isLength({ min: 1, max: 11 }).withMessage("enviar 'R' receptivo, 'A' ativo ou 'P' passante"),
+     
+     
     body("DATA_AGENDADA").notEmpty().withMessage("Data do agendamento invalida"),
     body("DATA_PREVISAO_FIM").notEmpty().withMessage("Data previsao invalida"),
     body("DATA_PROMETIDA").notEmpty().withMessage("Data prometida invalida"), 

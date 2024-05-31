@@ -30,7 +30,8 @@ async function get(req, res, next) {
 module.exports.get = get;
 
 function getEmployeeFromRec(req) {
-  const agenda = {    
+  const agenda = {   
+
     COD_EMPRESA: req.body.COD_EMPRESA,
     CONSULTOR: req.body.CONSULTOR,
     PRISMA: req.body.PRISMA,
@@ -62,19 +63,18 @@ function getEmployeeFromRec(req) {
 
 async function post(req, res, next) {
   try {
-    let agenda = getEmployeeFromRec(req);
+    let agenda = req.body;
 
   os = await employees.create(agenda);
     console.log({ 'numero_agenda': os
                 })
 
-    if  (os.length < 15) {
+    if  (os.length > 100) {
       res.status(201).json({  'result': 'SUCESSO',
                               'numero_agenda': os
                           });
     } else {
-      res.status(400).json({ 'result': 'ERRO DE VALIDACAO',
-      'numero_agenda': os
+      res.status(400).json({ 'errors': os        
      });
     }        
     
@@ -111,9 +111,9 @@ module.exports.put = put;
 
 async function del(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
+ console.log(req.body)
 
-    const success = await employees.delete(id);
+    const success = await employees.delete(req.body);
 
     if (success) { 
    

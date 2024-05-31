@@ -1,14 +1,14 @@
 const database = require('../services/database.js');
 
-const baseQuery = 
-`select cid.uf,
-        cid.cod_cidades,
-        cid.descricao 
-   from cidades cid
-
-`;
-
 async function find(context) {
+
+  const baseQuery = 
+  `select cid.uf,
+          cid.cod_cidades,
+          cid.descricao 
+     from "`+schemaUsuario+`".cidades cid
+  `;
+
   let query = baseQuery;
   const binds = {};
 

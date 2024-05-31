@@ -5,6 +5,7 @@ const axios = require('axios');
 const processocorretivo   = require('./model/processocorretivo.js');
 const vianuvem            = require('./model/vianuvem.js');
 
+
 require("dotenv-safe").config();
 
 
@@ -97,12 +98,13 @@ process.on('uncaughtException', err => {
 });
 
 function procedureTime() {
- 
+
   processocorretivo.find()
   vianuvem.find()
 }
 //3600000
 setInterval(procedureTime,3600000)
+
  
 
  

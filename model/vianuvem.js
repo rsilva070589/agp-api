@@ -53,11 +53,12 @@ async function getDados(){
   if(tokenvianuvem && (datatoken == new Date().getHours())) { 
     arrayIntegrados.pop()
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
-    await getVianuvem("Seguro registrado",null)
-    await getListaBusca()
-    await getVianuvem("MONTADORA",50039722) //Operacões montadora 
-    await getVianuvem("NPS POS VENDAS",)
-    await getVianuvem("NPS VENDAS",)
+    //await getVianuvem("Seguro registrado",null)
+    //await getListaBusca()
+    await getListaNPS()
+   // await getVianuvem("MONTADORA",50039722) //Operacões montadora 
+    //await getVianuvem("NPS POS VENDAS",)
+    //await getVianuvem("NPS VENDAS",)
     return  arrayIntegrados
   }
   
@@ -116,7 +117,7 @@ await  axios.request(config)
         if(processTypeIds == '50039722' && x.breadCrumbs[0]?.text != 'NPS POR VENDEDOR'){
           dado.PROCESSO=   x.processId,
            dado.TIPO=       x.breadCrumbs[0]?.text,
-           dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
+           dado.DATA=      /**  x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue ||*/ x.createDate,
            dado.PROPOSTA=   null,
            dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
            dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],
@@ -152,7 +153,7 @@ await  axios.request(config)
     if(processTypeIds == '50039722' && x.breadCrumbs[0]?.text == 'RFT-JLR (Royal Words)'){
       dado.PROCESSO=   x.processId,
        dado.TIPO=       'RFT-JLR',
-       dado.DATA=       x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue || x.createDate,
+       dado.DATA=       /**  x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue ||*/ x.createDate,
        dado.PROPOSTA=   null,
        dado.CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='NOME DO CLIENTE')[0]?.indexerValue ,
        dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],
@@ -194,7 +195,7 @@ await  axios.request(config)
      
     } else{
       arrayIntegrados.push(dado)
-    //  console.log(dado)
+      console.log(dado)
         apolise.push(dado) 
         if (dado.PROCESSO || dado.PROPOSTA){
           gravaSeguro(dado) 
@@ -225,6 +226,7 @@ async function getListaBusca(){
   console.log('qtde de propostas para Busca' +result.rows?.length)
   result.rows.map(async x => {
      await  getVianuvem(x.COD_PROPOSTA,null)
+    
   })
   
   return result.rows
@@ -233,25 +235,26 @@ async function getListaBusca(){
 async function getListaNPS(){
   const baseQueryCheckpoint = 
 `
-select 
-(u.nome||'-'||u.nome_completo) usuario
+select u.nome as USUARIO
   from agpdev.usuarios u
  where (u.cod_empresa, u.cod_funcao) in
        (select cod_empresa, cod_funcao
           from agpdev.comissoes_faixa
          where PREMIO = 'NPS'
          group by (cod_empresa, cod_funcao))
-   and mes >= '02/2024'
+   and mes = to_char(SYSDATE - 10,'mm/yyyy')
    and nvl(u.diretoria,'N') <> 'S'
    and (nome, mes) not in
        (select fi.vendedor, to_char(fi.data_venda, 'mm/yyyy')
           from nbs.fi_servicos_proposta fi
          where fi.cod_servico_fi = 402)
+         AND   U.NOME NOT IN (select nome from nbs.empresas_usuarios where demitido = 'S')
+         AND   U.NOME  IN (select nome from agpdev.vw_usuarios z where z.NOTA_NPS = 0 and z.MES =to_char(SYSDATE - 10,'mm/yyyy'))
 ` 
   const result = await database.simpleExecute(baseQueryCheckpoint); 
   console.log('qtde de NPS para busca' +result.rows?.length)
-  result.rows.map(async x => {
-  
+  result.rows.map(async x => {  
+    console.log(x)
      await  getVianuvem(x.USUARIO,null)
   })
   
@@ -281,7 +284,7 @@ COD_CLIENTE,
 SEQUENCIA_AGENTE
 )
 VALUES (
-:data_venda,
+sysdate,
 :COD_PROPOSTA,
 :cod_empresa,
 :OBS,
@@ -338,7 +341,10 @@ async function getPropostPeloChassi(chassi) {
 
   if (chassi != undefined){ 
      console.log('BUSCANDO PROPOSTA DO CHASSI: '+chassi)
-      queryPropostPeloChassi = `select v.cod_proposta from nbs.veiculos v where v.status='V' and v.chassi_completo=:chassi`;
+      queryPropostPeloChassi = `select v.cod_proposta from nbs.veiculos v 
+                                where v.status='V' 
+                                and v.data_venda >sysdate-180
+                                and v.chassi_completo=:chassi`;
       const result = await database.simpleExecute(queryPropostPeloChassi,[chassi]); 
       console.log(result.rows[0]?.COD_PROPOSTA)
       return result.rows[0]?.COD_PROPOSTA
@@ -376,15 +382,15 @@ function getTipoSeguradora (seguradora){
   return tipo 
 }
 
-function getCodServicoFi (tipo){ 
+function getCodServicoFi (tipo,vendedor){ 
   let tipoFinal = 0
-  if(tipo == 'NPS VENDAS' ){ tipoFinal  = 402} 
+  if(tipo == 'NPS VENDAS'  && vendedor != undefined){ tipoFinal  = 402} 
   if(tipo == 'NPS POR VENDEDOR' ){ tipoFinal  = 308} 
   if(tipo == 'LAND CARE JLR' ){ tipoFinal  = 404} 
   if(tipo == 'VOUCHER JLR' ){ tipoFinal  = 406}
   if(tipo == 'RFT-JLR' ){ tipoFinal  = 409}
   if(tipo == 'NPS POS VENDAS' ){ tipoFinal  = 403}
-  if(tipo == 'NPS VENDAS' ){ tipoFinal  = 407}
+  if(tipo == 'NPS VENDAS' && vendedor == undefined){ tipoFinal  = 407}
   if(tipo == 'FORECAST' ){ tipoFinal  = 408}
   console.log('classificacao tipo_servico_fi: '+tipoFinal)
   return tipoFinal || 405
@@ -434,8 +440,7 @@ async function gravaSeguro(dado) {
     console.log(sequencia)  
     console.log('Gravando Proposta/processo: ' + proposta||processo)
     console.log(data,proposta,chassi,vendedor,obs,seguradora,cilindrada,cpf,processo,tipo) 
-    const result = await database.simpleExecute(baseQuery,[data
-                                                            ,proposta
+    const result = await database.simpleExecute(baseQuery,[proposta
                                                             ,empresaVendedor 
                                                             ,obs
                                                             ,chassi
@@ -444,7 +449,7 @@ async function gravaSeguro(dado) {
                                                             ,valor
                                                             ,cilindrada                                                            
                                                             ,processo                                                            
-                                                            ,getTipoSeguradora(seguradora) || getCodServicoFi(tipo)
+                                                            ,getTipoSeguradora(seguradora) || getCodServicoFi(tipo,vendedor)
                                                             ,getCodServicoFi(tipo)
                                                             ,cpf 
                                                           ]); 

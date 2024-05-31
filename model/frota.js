@@ -1,5 +1,7 @@
 const database = require('../services/database.js');
 
+schemaUsuario1 = 'TESTE'
+
 const baseQuery = 
 `select pm.descricao_modelo,       
 cf.cod_modelo,
@@ -11,8 +13,8 @@ cf.data_compra,
 cf.km,
 cf.data_km,
 cf.cod_cliente
-from    clientes_frota cf, 
-produtos_modelos pm
+from    "`+schemaUsuario1+`".clientes_frota cf, 
+        "`+schemaUsuario1+`".produtos_modelos pm
 where  nvl(cf.vendido,'N') <> 'S'
 and    cf.cod_produto=pm.cod_produto
 and    cf.cod_modelo=pm.cod_modelo
@@ -23,6 +25,8 @@ const sortableColumns = ['id', 'nome'];
 async function find(context) {
   let query = baseQuery;
   const binds = {};
+
+  console.log(query)
 
   if (context.id) { 
     binds.tipo_id = context.id;
