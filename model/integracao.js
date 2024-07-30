@@ -382,6 +382,7 @@ function comissaoFaixa(arrayVendas,usuario,mes,meta,arrayRegras) {
     metaVendedor   = meta.filter(fm => fm.TIPO == tipo).map(x => x.QTDE)[0]
   }else{
     metaVendedor   = meta.filter(fm => fm.TIPO == 'META-VENDAS').map(x => x.QTDE)[0] 
+    console.log('meta vendedor vendas e consorcio é: '+metaVendedor)
   }
   
  return metaVendedor

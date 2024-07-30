@@ -53,12 +53,13 @@ async function getDados(){
   if(tokenvianuvem && (datatoken == new Date().getHours())) { 
     arrayIntegrados.pop()
     console.log({dataToken: datatoken, horarioAtual: new Date().getHours()})
-    //await getVianuvem("Seguro registrado",null)
-    //await getListaBusca()
+    await getVianuvem("Seguro registrado",null)
+     await getListaBusca()
     await getListaNPS()
-   // await getVianuvem("MONTADORA",50039722) //Operacões montadora 
-    //await getVianuvem("NPS POS VENDAS",)
-    //await getVianuvem("NPS VENDAS",)
+      await getVianuvem('CONSORCIO',50041827) //CONSORCIO
+   await getVianuvem("MONTADORA",50039722) //Operacões montadora 
+    await getVianuvem("NPS POS VENDAS",)
+    await getVianuvem("NPS VENDAS",)
     return  arrayIntegrados
   }
   
@@ -66,10 +67,15 @@ async function getDados(){
  
 
 async function getVianuvem(tipobusca,processTypeIds){ 
+
+ 
+
   var time = new Date();
   var dataBusca = new Date();
-  dataBusca.setDate(time.getDate() - 10); // Adiciona 3 dias
+  dataBusca.setDate(dataBusca.getDate() - 30); // Adiciona 3 dias
+  
   console.log(tipobusca) 
+  console.log('data da busca é: '+FormataData(dataBusca))
 
 let data = JSON.stringify({
   "documentId": '',
@@ -78,7 +84,7 @@ let data = JSON.stringify({
   "documentTypeIds": [],
   "initialDate":    FormataData(dataBusca) + " 00:37:28",
   "finalDate": " ",
-  "searchFor": tipobusca,
+  "searchFor":  tipobusca,
   "like": false
 });
 
@@ -96,6 +102,7 @@ let config = {
 await  axios.request(config)
   .then((response) =>{ 
   apolise = [] 
+  
       response.data.processes.map( x=> {
        
         const dado = {}
@@ -179,7 +186,24 @@ await  axios.request(config)
  
   }
 
-        
+  if( processTypeIds == '50041827' ){ //50041827 CONSORCIO
+    dado.TIPO = 'CONSORCIO'
+    dado.EMPRESA=    x.processEstablishmentBreadCrumb[0],      
+    dado.VENDEDOR=    x.indexerVO.filter(f => f.indexerLabel=='VENDEDOR')[0]?.indexerValue?.split('-')[0] || x.ownerName,
+    dado.DATA_VENDA=      x.indexerVO.filter(f => f.indexerLabel=='DATA-VENDA')[0]?.indexerValue  || x.createDate,
+    dado.NOME=    x.indexerVO.filter(f => f.indexerLabel=='NOME')[0]?.indexerValue ,
+    dado.PLANO=    x.indexerVO.filter(f => f.indexerLabel=='PLANO')[0]?.indexerValue ,
+    dado.GRUPO=    x.indexerVO.filter(f => f.indexerLabel=='GRUPO')[0]?.indexerValue  || x.indexerVO.filter(f => f.indexerLabel=='GRUPO COTA RD')[0]?.indexerValue,
+    dado.COTA =    x.indexerVO.filter(f => f.indexerLabel=='COTA')[0]?.indexerValue ,
+    dado.RD=          x.indexerVO.filter(f => f.indexerLabel=='VERSAO')[0]?.indexerValue ,
+    dado.VALOR_COTA=    x.indexerVO.filter(f => f.indexerLabel=='VALOR-COTA')[0]?.indexerValue ,
+    dado.PROCESSO=   x.processId,
+    dado.OBS=    x.indexerVO.filter(f => f.indexerLabel=='OBS')[0]?.indexerValue,
+    dado.COD_CLIENTE=    x.indexerVO.filter(f => f.indexerLabel=='CPF-CNPJ')[0]?.indexerValue 
+    //dado.VALOR=       x.indexerVO.filter(f => f.indexerLabel=='REALIZADO')[0]?.indexerValue.replace('.','').replace(',','.')||0 
+  }
+
+  
     if ( x.indexerVO.filter(f => f.indexerLabel=='DATA DA VENDA DO SEGURO')[0]?.indexerValue == undefined
      &&  x.indexerVO.filter(f => f.indexerLabel=='Ano/Mês (Ex: 2023/09)')[0]?.indexerValue == undefined
      && x.indexerVO.filter(f => f.indexerLabel=='DATA ADESÃO')[0]?.indexerValue == undefined
@@ -187,18 +211,29 @@ await  axios.request(config)
      && x.breadCrumbs[0]?.text != 'LAND CARE JLR' 
      && x.breadCrumbs[0]?.text != 'NPS GERAL'
      && x.breadCrumbs[0]?.text != 'RFT-JLR (Royal Words)'
-     && x.breadCrumbs[0]?.text != 'FORECAST'
-     
-     ){
-      // console.log('Processo: '+dado.PROCESSO+' - '+dado.TIPO+' nao tem Registro valido')
+     && x.breadCrumbs[0]?.text != 'FORECAST'   
+     && x.breadCrumbs[0]?.text != 'Cota Nova'   
+     && x.breadCrumbs[0]?.text != 'COTA DE REPOSIÇÃO'      
+     && x.breadCrumbs[0]?.text != 'Cota de Reposição'   
+     )
+
+
+     {
+       console.log('Processo: '+dado.PROCESSO+' - '+dado.TIPO+' nao tem Registro valido'+'  type: '+x.breadCrumbs[0]?.text)
  
      
     } else{
       arrayIntegrados.push(dado)
-      console.log(dado)
+    
         apolise.push(dado) 
         if (dado.PROCESSO || dado.PROPOSTA){
-          gravaSeguro(dado) 
+            if(dado.TIPO == 'CONSORCIO'){
+              gravaConsorcio(dado)
+            }else{
+              gravaSeguro(dado) 
+            }
+         //
+       
         }
                 
 
@@ -219,18 +254,17 @@ async function find(){
 }
 
 async function getListaBusca(){
-  const baseQuery = 
-  ` select cod_proposta from agpdev.buscaVianuvem
-  `;   
+  const baseQuery =   ` select cod_proposta from agpdev.buscaVianuvem  `;     
   const result = await database.simpleExecute(baseQuery); 
-  console.log('qtde de propostas para Busca' +result.rows?.length)
+  console.log('qtde de propostas para Busca' +result.rows?.length)  
   result.rows.map(async x => {
-     await  getVianuvem(x.COD_PROPOSTA,null)
+     await  getVianuvem(x.COD_PROPOSTA,null)     
     
   })
   
   return result.rows
 }
+
 
 async function getListaNPS(){
   const baseQueryCheckpoint = 
@@ -311,8 +345,14 @@ and  cod_proposta=:cod_proposta
 
 const baseQueryProcesso = 
 `
-select cod_origem from nbs.fi_servicos_proposta
+select ''||cod_origem as cod_origem from nbs.fi_servicos_proposta
 where   cod_origem=:cod_origem
+
+union all
+
+SELECT ''||cod_origem FROM agpdev.consorcio_vendas 
+where cod_origem = :cod_origem
+
 `;  
  
 const baseQueryEmpresa = 
@@ -457,8 +497,52 @@ async function gravaSeguro(dado) {
   }   
 } 
  
+async function gravaConsorcio (dado) {
+
+  console.log(dado)
+
+  
+  let EMPRESA,VENDEDOR ,DATA_VENDA,NOME,PLANO,GRUPO,COTA,RD,VALOR_COTA,OBS,PROCESSO,COD_CLIENTE = null
+
+  let valor = 0
+ if (dado.VALOR_COTA){
+  valor = dado.VALOR_COTA.replace('.','').replace(',','.')
+ }
+
+  EMPRESA = dado.EMPRESA  ,
+  VENDEDOR = dado.VENDEDOR,
+  DATA_VENDA = tomorrow(dado.DATA_VENDA),
+  NOME = dado.NOME,
+  COD_CLIENTE =dado.COD_CLIENTE,
+  PLANO = dado.PLANO,
+  GRUPO = dado.GRUPO,
+  COTA = dado.COTA,
+  RD = dado.RD,
+  VALOR_COTA = valor,
+  OBS = dado.OBS
+  PROCESSO = dado.PROCESSO
+
+
+  queryConsorcio = `insert into agpdev.consorcio_vendas (COD_EMPRESA,VENDEDOR,DATA_VENDA,NOME,COD_CLIENTE,PLANO,GRUPO,COTA,RD,VALOR_COTA,COD_ORIGEM,OBS)
+  VALUES (:COD_EMPRESA,:VENDEDOR,:DATA_VENDA,:NOME,:COD_CLIENTE,:PLANO,:GRUPO,:COTA,:RD,:VALOR_COTA,:COD_ORIGEM,:OBS)`
+
+  if (await getProcessoExistente(PROCESSO) == 0){ 
+
+    
+    var empresaVendedor = await getEmpresaVendedor(VENDEDOR,EMPRESA);
+    console.log('Empresa string : '+EMPRESA + empresaVendedor ) 
+        console.log('Gravando Consorcio/processo: ' + PROCESSO)
+    
+
+     await database.simpleExecute(queryConsorcio,[
+      EMPRESA,VENDEDOR ,DATA_VENDA,NOME,COD_CLIENTE,PLANO,GRUPO,COTA,RD,VALOR_COTA,PROCESSO,OBS
+                                          ]); 
+    return null
+  }   
+
+}
  
-  function FormataData(dataFormat){
+function FormataData(dataFormat){
     var data = dataFormat,
         dia  = data.getDate().toString(),
         diaF = (dia.length == 1) ? '0'+dia : dia,
@@ -467,9 +551,6 @@ async function gravaSeguro(dado) {
         anoF = data.getFullYear();
     return diaF+"/"+mesF+"/"+anoF;
   }
-
- 
- 
 
 const tomorrow = (dt) => {
 

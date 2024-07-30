@@ -17,11 +17,11 @@ const agenda     = require('../controllers/agenda.js');
 const os         = require('../controllers/os.js');
 const empresas   = require('../controllers/empresas.js'); 
 const usuarios   = require('../controllers/usuarios.js'); 
-const funcoes   = require('../controllers/funcoes.js'); 
+const funcoes    = require('../controllers/funcoes.js'); 
 const comissao   = require('../controllers/comissaoanalitica.js'); 
-const comissaoresumo = require('../controllers/comissaoresumo.js'); 
+const comissaoresumo    = require('../controllers/comissaoresumo.js'); 
 const comissaocalculada = require('../controllers/comissaocalculada.js'); 
-const regracomissao   = require('../controllers/regracomissao.js'); 
+const regracomissao     = require('../controllers/regracomissao.js'); 
 const constraint  = require('../controllers/constraint.js');
 const checkpoint  = require('../controllers/checkpoint.js');
 const facil       = require('../controllers/comissaofacil.js');
@@ -30,13 +30,35 @@ const integracaoNew  = require('../controllers/integracaoNew.js');
 const vianuvem    = require('../controllers/vianuvem.js');
 const fechamento  = require('../controllers/fechamento.js');
 const login  = require('../controllers/login.js');
+const newcon = require('../controllers/newcon.js');
+const painel = require('../controllers/painel.js');
+const syonet = require('../model/syonet.js');
+const emplacamento = require('../controllers/emplacamento.js');
+
 
 require("dotenv-safe").config();
 const jwt = require('jsonwebtoken');
 
+router.route('/emplacamento')
+.get( emplacamento.get  )  
+
+router.route('/validacao') 
+.post(emplacamento.validacao)
+
+router.route('/syonet')
+.get( syonet.find  ) 
+.post( syonet.find  ); 
+
 router.route('/login')
 .post( login.get  ) ;
- 
+
+router.route('/painel')
+.get(painel.get)
+.post(painel.get)
+
+router.route('/newcon')
+.get(newcon.get)
+.post(newcon.post);
 
 router.route('/vianuvem')
 .get(vianuvem.get);  
